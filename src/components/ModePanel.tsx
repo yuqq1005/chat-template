@@ -5,6 +5,7 @@ import {
   type CharacterCard,
   type ReplyMode,
 } from '../utils/characterStorage'
+import { anchorPopupStyle } from '../utils/shellLayout'
 
 interface ModePanelProps {
   open: boolean
@@ -49,15 +50,14 @@ export function ModePanel({
   if (!open) return null
 
   const rect = anchorRef.current?.getBoundingClientRect()
-  const top = rect ? rect.bottom + 8 : 56
-  const left = rect ? Math.max(8, Math.min(rect.left, window.innerWidth - 328)) : 16
+  const { top, left } = anchorPopupStyle(rect, { panelWidth: 320 })
 
   return (
     <div
       ref={panelRef}
       role="dialog"
       aria-label="模式"
-      className="modal-panel fixed z-50 w-[min(320px,calc(100vw-16px))] overflow-hidden rounded-2xl border border-white/12 bg-[rgba(14,16,24,0.96)] p-3 shadow-glass backdrop-blur-2xl"
+      className="modal-panel fixed z-50 w-[min(320px,calc(100%-16px))] overflow-hidden rounded-2xl border border-white/12 bg-[rgba(14,16,24,0.96)] p-3 shadow-glass backdrop-blur-2xl"
       style={{ top, left }}
     >
       <section className="space-y-2">

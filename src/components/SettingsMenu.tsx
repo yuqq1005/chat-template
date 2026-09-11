@@ -1,5 +1,6 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { HiOutlineChevronRight, HiOutlineCircleStack, HiOutlineSparkles } from 'react-icons/hi2'
+import { anchorPopupStyle } from '../utils/shellLayout'
 
 export type SettingsPageId = 'character' | 'memory'
 
@@ -55,15 +56,14 @@ export function SettingsMenu({ open, anchorRef, onClose, onSelect }: SettingsMen
   if (!open) return null
 
   const rect = anchorRef.current?.getBoundingClientRect()
-  const top = rect ? rect.bottom + 8 : 56
-  const right = rect ? Math.max(8, window.innerWidth - rect.right) : 16
+  const { top, right } = anchorPopupStyle(rect, { panelWidth: 280 })
 
   return (
     <div
       ref={panelRef}
       role="menu"
       aria-label="设置"
-      className="modal-panel fixed z-50 w-[280px] overflow-hidden rounded-2xl border border-white/12 bg-[rgba(14,16,24,0.94)] p-1.5 shadow-glass backdrop-blur-2xl"
+      className="modal-panel fixed z-50 w-[min(280px,calc(100%-16px))] overflow-hidden rounded-2xl border border-white/12 bg-[rgba(14,16,24,0.94)] p-1.5 shadow-glass backdrop-blur-2xl"
       style={{ top, right }}
     >
       {ITEMS.map((item) => {

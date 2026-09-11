@@ -7,6 +7,7 @@ import {
   type BgSource,
 } from '../utils/bgSettings'
 import boyfriendBg from '../assets/boyfriend.jpg'
+import { anchorPopupStyle } from '../utils/shellLayout'
 
 interface BackgroundPickerProps {
   open: boolean
@@ -39,10 +40,8 @@ export function BackgroundPicker({
   useEffect(() => {
     if (!open || !anchorRef.current) return
     const rect = anchorRef.current.getBoundingClientRect()
-    setPos({
-      top: rect.bottom + 8,
-      right: Math.max(8, window.innerWidth - rect.right),
-    })
+    const { top, right } = anchorPopupStyle(rect, { panelWidth: 320 })
+    setPos({ top, right })
   }, [open, anchorRef])
 
   useEffect(() => {

@@ -22,7 +22,7 @@ export function SettingsSheet({
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-[rgba(8,10,16,0.72)] backdrop-blur-md">
-      <div className="modal-panel flex h-full w-full flex-col bg-[rgba(12,14,20,0.92)] sm:mx-auto sm:max-w-[480px] sm:border-x sm:border-white/10">
+      <div className="modal-panel flex h-full w-full flex-col bg-[rgba(12,14,20,0.92)]">
         <header className="flex shrink-0 items-center gap-2 border-b border-white/10 px-3 py-3">
           <button
             type="button"

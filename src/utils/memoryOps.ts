@@ -79,9 +79,12 @@ export function buildMemoryUpdatePrompt(charName: string, userName: string): str
 - 只记录对长期对话有用的事实；不要记录普通寒暄、一次性无意义动作。
 - 用户偏好、关系变化、约定、重要物品、地点状态、身份设定、情绪核心优先。
 - 若新事实明显替代旧事实，必须在 facts_to_invalidate 中写明被替代的 subject+predicate。
+- 增量写入：已在【已有事实】中的 subject+predicate 不要重复输出，除非 object 已变化。
+- 硬性上限：facts_to_add 每次最多 8 条；entities 只列本轮新实体，description 不超过 30 字。
+- 优先保证 JSON 完整闭合；宁可少写，也不要截断。无新情报时用空数组并完整输出闭合标签。
 - \`<memory_ops>\` 之外不要输出任何解释或对话。
 
-【兼容旧版】为保持 Markdown 记忆表更新，请在 \`<memory_ops>\` 之后同时输出 \`<memory_diff>\`…\`</memory_diff>\`，内部为 JSON 数组。若无表格变更，必须输出：\`<memory_diff>[]</memory_diff>\`。
+【兼容旧版】\`<memory_ops>\` 闭合后再输出 \`<memory_diff>\`。无表格变更时只输出 \`<memory_diff>[]</memory_diff>\`，不要把长文塞进 diff。
 
 memory_diff 支持的操作示例：
 [
@@ -93,33 +96,128 @@ memory_diff 支持的操作示例：
 输出顺序要求：先完整的 \`<memory_ops>\` 块，再 \`<memory_diff>\` 块；不要颠倒。`
 }
 
-export function parseMemoryOps(responseText: string): MemoryOps | null {
-  if (!responseText) return null
+function stripJsonFence(raw: string): string {
+  return raw.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```\s*$/, '').trim()
+}
+
+/** 截断时没有闭合标签也要取出内容 */
+function extractTaggedBlock(text: string, tag: string, stopAt?: string): string | null {
+  const open = `<${tag}>`
+  const close = `</${tag}>`
+  const i = text.indexOf(open)
+  if (i < 0) return null
+  const start = i + open.length
+  const j = text.indexOf(close, start)
+  if (j >= 0) return stripJsonFence(text.slice(start, j))
+  let end = text.length
+  if (stopAt) {
+    const k = text.indexOf(stopAt, start)
+    if (k >= 0) end = k
+  }
+  return stripJsonFence(text.slice(start, end))
+}
+
+function tryParseJson(jsonStr: string): unknown | null {
   try {
-    const match = responseText.match(/<memory_ops>([\s\S]*?)<\/memory_ops>/)
-    if (!match) return null
-    let jsonStr = match[1].trim()
-    jsonStr = jsonStr.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```\s*$/, '').trim()
-    const parsed = JSON.parse(jsonStr) as unknown
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
-    return parsed as MemoryOps
-  } catch (e) {
-    console.warn('[结构化记忆] memory_ops 解析失败:', e)
+    return JSON.parse(jsonStr)
+  } catch {
     return null
   }
 }
 
-export function parseMemoryDiff(responseText: string): unknown[] | null {
-  try {
-    const match = responseText.match(/<memory_diff>([\s\S]*?)<\/memory_diff>/)
-    if (!match) return null
-    let jsonStr = match[1].trim()
-    jsonStr = jsonStr.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```\s*$/, '').trim()
-    const parsed = JSON.parse(jsonStr) as unknown
-    return Array.isArray(parsed) ? parsed : null
-  } catch {
-    return null
+function sliceBalanced(src: string, start: number): { value: string; end: number } | null {
+  const open = src[start]
+  const close = open === '{' ? '}' : open === '[' ? ']' : ''
+  if (!close) return null
+  let depth = 0
+  let inString = false
+  let escape = false
+  for (let i = start; i < src.length; i++) {
+    const ch = src[i]
+    if (inString) {
+      if (escape) escape = false
+      else if (ch === '\\') escape = true
+      else if (ch === '"') inString = false
+      continue
+    }
+    if (ch === '"') {
+      inString = true
+      continue
+    }
+    if (ch === open) depth++
+    else if (ch === close) {
+      depth--
+      if (depth === 0) return { value: src.slice(start, i + 1), end: i + 1 }
+    }
   }
+  return null
+}
+
+function extractCompleteJsonValues(src: string): unknown[] {
+  const out: unknown[] = []
+  let i = 0
+  while (i < src.length) {
+    const ch = src[i]
+    if (ch === ']') break
+    if (ch === '{' || ch === '[') {
+      const sliced = sliceBalanced(src, i)
+      if (!sliced) break
+      const parsed = tryParseJson(sliced.value)
+      if (parsed === null) break
+      out.push(parsed)
+      i = sliced.end
+      continue
+    }
+    i++
+  }
+  return out
+}
+
+function extractNamedArray(raw: string, key: string): unknown[] {
+  const re = new RegExp(`"${key}"\\s*:\\s*\\[`)
+  const m = re.exec(raw)
+  if (!m || m.index == null) return []
+  return extractCompleteJsonValues(raw.slice(m.index + m[0].length))
+}
+
+function salvageMemoryOps(raw: string): MemoryOps | null {
+  const entities = extractNamedArray(raw, 'entities') as MemoryOps['entities']
+  const facts_to_add = extractNamedArray(raw, 'facts_to_add') as MemoryOps['facts_to_add']
+  const facts_to_invalidate = extractNamedArray(
+    raw,
+    'facts_to_invalidate',
+  ) as MemoryOps['facts_to_invalidate']
+  if (!entities?.length && !facts_to_add?.length && !facts_to_invalidate?.length) return null
+  return { entities, facts_to_add, facts_to_invalidate }
+}
+
+export function parseMemoryOps(responseText: string): MemoryOps | null {
+  if (!responseText) return null
+  const raw = extractTaggedBlock(responseText, 'memory_ops', '<memory_diff>')
+  if (raw == null) return null
+  const parsed = tryParseJson(raw)
+  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    return parsed as MemoryOps
+  }
+  const salvaged = salvageMemoryOps(raw)
+  if (salvaged) {
+    console.warn(
+      '[结构化记忆] memory_ops 不完整，已抢救',
+      salvaged.facts_to_add?.length ?? 0,
+      '条事实',
+    )
+    return salvaged
+  }
+  console.warn('[结构化记忆] memory_ops 解析失败')
+  return null
+}
+
+export function parseMemoryDiff(responseText: string): unknown[] | null {
+  const raw = extractTaggedBlock(responseText, 'memory_diff')
+  if (raw == null) return null
+  const parsed = tryParseJson(raw)
+  if (Array.isArray(parsed)) return parsed
+  return extractCompleteJsonValues(raw.startsWith('[') ? raw.slice(1) : raw)
 }
 
 type DiffOp = {
@@ -181,11 +279,19 @@ export function applyMemoryDiff(oldMarkdown: string, operations: DiffOp[]): stri
   return lines.join('\n')
 }
 
+function factIdentity(subject?: string, predicate?: string): string {
+  return `${String(subject || '').trim()}|${String(predicate || '').trim()}`
+}
+
+function clamp01(n: number, fallback: number): number {
+  return typeof n === 'number' && !Number.isNaN(n) ? Math.min(1, Math.max(0, n)) : fallback
+}
+
 export async function applyMemoryOps(
   contactId: string,
   memoryOps: MemoryOps,
   sourceEpisodeId: string,
-): Promise<{ added: number; invalidated: number }> {
+): Promise<{ added: number; updated: number; invalidated: number }> {
   const now = Date.now()
   const active = await getFactsByContact(contactId, true)
   let invalidated = 0
@@ -213,29 +319,63 @@ export async function applyMemoryOps(
   }
 
   const entitiesBlock = Array.isArray(memoryOps.entities) ? memoryOps.entities : []
+  const byKey = new Map<string, IdbMemoryFact>()
+  for (const f of active) {
+    if (invalidatedIds.has(f.id)) continue
+    const key = factIdentity(f.subject, f.predicate)
+    if (key === '|') continue
+    if (!byKey.has(key)) byKey.set(key, f)
+  }
+
   const toAdd: IdbMemoryFact[] = []
+  const toUpdate: IdbMemoryFact[] = []
+  const seenInBatch = new Set<string>()
+
   for (const item of memoryOps.facts_to_add || []) {
     if (!item || typeof item !== 'object') continue
-    const conf =
-      typeof item.confidence === 'number' && !Number.isNaN(item.confidence)
-        ? Math.min(1, Math.max(0, item.confidence))
-        : 0.7
-    const imp =
-      typeof item.importance === 'number' && !Number.isNaN(item.importance)
-        ? Math.min(1, Math.max(0, item.importance))
-        : 0.5
+    const subject = item.subject != null ? String(item.subject) : ''
+    const predicate = item.predicate != null ? String(item.predicate) : ''
+    const object = item.object != null ? String(item.object) : ''
     const factText =
-      item.factText != null
-        ? String(item.factText)
-        : `${item.subject ?? ''} ${item.predicate ?? ''} ${item.object ?? ''}`.trim()
+      item.factText != null ? String(item.factText) : `${subject} ${predicate} ${object}`.trim()
     if (!factText) continue
+
+    const key = factIdentity(subject, predicate)
+    if (key !== '|' && seenInBatch.has(key)) continue
+    if (key !== '|') seenInBatch.add(key)
+
+    const conf = clamp01(item.confidence as number, 0.7)
+    const imp = clamp01(item.importance as number, 0.5)
+    const existing = key !== '|' ? byKey.get(key) : undefined
+    if (existing) {
+      if (existing.object === object && existing.factText === factText) continue
+      toUpdate.push({
+        ...existing,
+        object,
+        factText,
+        confidence: conf,
+        importance: imp,
+        type: item.type ?? existing.type,
+        timeScope: item.timeScope ?? existing.timeScope,
+        sourceEpisodeId,
+        updatedAt: now,
+        metadata: {
+          ...(existing.metadata || {}),
+          type: item.type ?? existing.type,
+          timeScope: item.timeScope ?? existing.timeScope,
+          entities: entitiesBlock,
+          source: 'memory_ops',
+        },
+      })
+      continue
+    }
 
     toAdd.push({
       id: memoryId('fact'),
       contactId,
-      subject: item.subject != null ? String(item.subject) : '',
-      predicate: item.predicate != null ? String(item.predicate) : '',
-      object: item.object != null ? String(item.object) : '',
+      subject,
+      predicate,
+      object,
       factText,
       sourceEpisodeId,
       confidence: conf,
@@ -257,7 +397,8 @@ export async function applyMemoryOps(
   }
 
   if (toAdd.length) await saveFacts(toAdd)
-  return { added: toAdd.length, invalidated }
+  for (const row of toUpdate) await saveFact(row)
+  return { added: toAdd.length, updated: toUpdate.length, invalidated }
 }
 
 export async function runSecondaryMemoryUpdate(options: {
@@ -283,8 +424,17 @@ export async function runSecondaryMemoryUpdate(options: {
   }
   conversationText += `${charName}：${options.assistantReply}\n`
 
+  const existingFacts = await getFactsByContact(contactId, true)
+  const existingBlock =
+    existingFacts.length === 0
+      ? '（暂无）'
+      : existingFacts
+          .slice(0, 60)
+          .map((f) => `- ${f.subject} / ${f.predicate} = ${f.object || f.factText}`)
+          .join('\n')
+
   const systemPrompt = buildMemoryUpdatePrompt(charName, userName)
-  const userContent = `请分析以下对话记录并提取情报。\n\n${conversationText}\n\n【输出要求】\n1. 严格按照系统提示：优先输出完整的 <memory_ops> … </memory_ops>（JSON 对象）。\n2. 为兼容旧版，请再输出 <memory_diff> … </memory_diff> 以更新下方 Markdown 记忆表；无表格变更时输出 <memory_diff>[]</memory_diff>。\n\n【当前记忆状态】：\n<current_memory>\n${mem.memoryTable}\n</current_memory>`
+  const userContent = `请分析以下对话记录并提取情报。\n\n${conversationText}\n\n【输出要求】\n1. 必须完整闭合 <memory_ops> … </memory_ops>。只写本轮新增或发生变化的事实，已有事实不要重复。facts_to_add 最多 8 条。\n2. 无表格变更时输出 <memory_diff>[]</memory_diff>。\n\n【已有事实】\n${existingBlock}\n\n【当前记忆表】\n<current_memory>\n${mem.memoryTable}\n</current_memory>`
 
   const provider = getProvider(cfg.providerId)
   const caller = new AiCaller({
@@ -293,19 +443,23 @@ export async function runSecondaryMemoryUpdate(options: {
     model: cfg.model,
     temperature: 0.1,
     topP: 0.9,
-    maxTokens: 2000,
+    maxTokens: 4096,
     disableThinking: Boolean(provider.supportsThinkingDisable),
   })
 
   try {
-    const { content } = await caller.chat([
+    const { content, finishReason } = await caller.chat([
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userContent },
     ])
+    if (finishReason === 'length') {
+      console.warn('[副模型记忆] 输出被 max_tokens 截断，尝试抢救已完整条目')
+    }
 
     const ops = parseMemoryOps(content)
     let opsApplied = false
     let added = 0
+    let updated = 0
     let invalidated = 0
 
     if (ops) {
@@ -317,11 +471,12 @@ export async function runSecondaryMemoryUpdate(options: {
         source: 'secondary_model_memory_ops',
         createdAt: Date.now(),
         messageIds: [],
-        metadata: { memoryOps: ops, oldMemoryLength: mem.memoryTable.length },
+        metadata: { memoryOps: ops, oldMemoryLength: mem.memoryTable.length, finishReason },
       }
       await saveMemoryEpisode(episode)
       const result = await applyMemoryOps(contactId, ops, episode.id)
       added = result.added
+      updated = result.updated
       invalidated = result.invalidated
       opsApplied = true
     }
@@ -352,7 +507,7 @@ export async function runSecondaryMemoryUpdate(options: {
     return {
       ok: true,
       message: opsApplied
-        ? `记忆已更新：+${added} / 失效 ${invalidated}`
+        ? `记忆已更新：+${added} / 更新 ${updated} / 失效 ${invalidated}`
         : '记忆表已按 diff 更新',
     }
   } catch (e) {

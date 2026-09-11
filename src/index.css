@@ -29,6 +29,41 @@ body,
   -webkit-font-smoothing: antialiased;
 }
 
+/* PC：外层居中；手机壳限制宽度 */
+.app-shell-host {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(124, 92, 255, 0.08), transparent 55%),
+    #07080c;
+}
+
+.app-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  /* 让内部 fixed 浮层相对手机壳定位，而不是整屏 */
+  transform: translateZ(0);
+}
+
+@media (min-width: 520px) {
+  .app-shell {
+    width: min(100%, 430px);
+    height: 100%;
+    border-radius: 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.35),
+      0 0 80px rgba(0, 0, 0, 0.45);
+  }
+}
+
 button,
 input,
 textarea {

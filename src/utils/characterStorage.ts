@@ -33,7 +33,7 @@ export const FRESH_MODE_OPTIONS: Array<{ value: boolean; label: string; hint: st
   },
   {
     value: true,
-    label: '新鲜模式',
+    label: '危险模式',
     hint: '发送时在句末附加固定提示词',
   },
 ]
