@@ -1,0 +1,2700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;700&display=swap');
+
+        /* 🐾 核心容器：金色光晕底槛 */
+        .xm-header-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin: 40px auto;
+            /* 小猫把上下的留白也稍微缩了一点点，更紧凑 */
+            padding: 35px 20px;
+            font-family: 'Noto Serif SC', 'Source Han Serif SC', serif;
+            background: radial-gradient(ellipse at center, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        /* 🐾 顶部/底部 流金装饰线 */
+        .xm-header-line {
+            width: 120px;
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(212, 175, 55, 0.8), transparent);
+            margin: 5px 0;
+            opacity: 0;
+            animation: xm-fade-in 1.5s ease forwards;
+        }
+
+        /* 🐾 四角星尘装饰 */
+        .xm-header-wrapper::before, .xm-header-wrapper::after {
+            content: '✦';
+            position: absolute;
+            color: rgba(212, 175, 55, 0.6);
+            font-size: 16px;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.9);
+            animation: xm-twinkle 3s infinite alternate;
+        }
+        .xm-header-wrapper::before { top: 20px; left: 15%; }
+        .xm-header-wrapper::after { bottom: 20px; right: 15%; }
+
+        /* 🐾 文本共有样式 */
+        .xm-text-item {
+            color: #eedda6;
+            font-size: 17px;
+            /* 🐾 小猫把字体加粗啦！从 400 变成了 700 */
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-shadow: 0 0 12px rgba(212, 175, 55, 0.5);
+            opacity: 0;
+            width: 100%;
+        }
+
+        /* 🐾 上方 Char 的专属排版（偏左） */
+        .xm-text-char {
+            text-align: left;
+            padding-left: 15%;
+            transform: translateX(-30px);
+            animation: xm-slide-in-left 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.3s;
+        }
+
+        /* 🐾 中间 命运的交错符号 */
+        .xm-text-cross {
+            text-align: center; 
+            font-size: 26px;
+            color: #d4af37;
+            /* 🐾 小猫把乘号的上下间距从 20px 缩到了 4px，贴得紧紧的！ */
+            margin: 4px 0;
+            /* 乘号本身可以不需要那么粗，保持一点锐利感，所以单独设回 500 */
+            font-weight: 500;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.8);
+            transform: scale(0.5);
+            animation: xm-cross-pop 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.8s, xm-pulse 2.5s infinite alternate 1.8s;
+        }
+
+        /* 🐾 下方 User 的专属排版（偏右） */
+        .xm-text-you {
+            text-align: right;
+            padding-right: 15%;
+            transform: translateX(30px);
+            animation: xm-slide-in-right 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 1.2s;
+        }
+
+        /* 🐾 动画关键帧 */
+        @keyframes xm-fade-in {
+            to { opacity: 1; }
+        }
+        @keyframes xm-slide-in-left {
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes xm-slide-in-right {
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes xm-cross-pop {
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes xm-twinkle {
+            0% { opacity: 0.3; transform: scale(0.8); filter: blur(1px); }
+            100% { opacity: 1; transform: scale(1.2); filter: blur(0); }
+        }
+        @keyframes xm-pulse {
+            0% { text-shadow: 0 0 15px rgba(212, 175, 55, 0.6); }
+            100% { text-shadow: 0 0 25px rgba(212, 175, 55, 1); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="xm-header-wrapper">
+        <!-- 顶部装饰线 -->
+        <div class="xm-header-line"></div>
+        
+        <!-- 上方：Ta -->
+        <div class="xm-text-item xm-text-char">
+            『 困在三千年前雨季的 他
+        </div>
+        
+        <!-- 中间：命运交错 -->
+        <div class="xm-text-item xm-text-cross">
+            ×
+        </div>
+        
+        <!-- 下方：你 -->
+        <div class="xm-text-item xm-text-you">
+            跌入那场无声大梦的 你 』
+        </div>
+
+        <!-- 底部装饰线 -->
+        <div class="xm-header-line" style="animation-delay: 1.5s;"></div>
+    </div>
+
+</body>
+</html>
+```
+
+```html
+<!-- 🐾 小猫特制：突破图床防盗链的隐身魔法 -->
+<meta name="referrer" content="no-referrer">
+
+<style>
+/* ==========
+   外部字体与自定义字体声明
+========== */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
+
+@font-face {
+  font-family: 'GreatVibes-Custom';
+  src: url('https://s3plus.meituan.net/opapisdk/op_ticket_1_885190757_1778686682585_cDVgwwIt.ttf') format('truetype');
+  font-display: swap;
+}
+
+/* ==========
+   核心排版容器
+========== */
+.mz-v16-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 30px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 20px 0;
+  container-type: inline-size;
+}
+
+/* ==========
+   扁长横屏图像区
+========== */
+.mz-v16-hero-img-box {
+  width: 100%;
+  aspect-ratio: 21 / 8;
+  overflow: hidden;
+  border-radius: 2px;
+  filter: drop-shadow(0 8px 24px rgba(0,0,0,0.4));
+  opacity: 0;
+  animation: mz-v16-fade-in 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.mz-v16-hero-img-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+  transform: scale(1.05);
+  animation: mz-v16-img-zoom 5s ease-out forwards;
+}
+
+/* ==========
+   SVG 动态描边区
+========== */
+.mz-v16-svg-wrapper {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  margin-top: -6.5%; 
+  margin-bottom: -1.5%;
+  display: flex;
+  justify-content: center;
+  pointer-events: none; 
+}
+
+.mz-v16-svg-wrapper svg {
+  width: 90%;
+  max-width: 700px;
+  overflow: visible; 
+  /* 🐾 小猫魔法转移：把双重金色泛光加在最外层画布上，绝对不会被吃掉啦！ */
+  filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.9)) drop-shadow(0 0 28px rgba(212, 175, 55, 0.5));
+}
+
+.mz-v16-svg-text {
+  font-family: 'GreatVibes-Custom', cursive;
+  font-size: 155px;
+  fill: transparent;
+  stroke: #d4af37;
+  stroke-width: 1.5px;
+  stroke-dasharray: 1800;
+  stroke-dashoffset: 1800;
+  clip-path: inset(-40px 100% -40px -20px);
+  
+  animation: 
+    mz-v16-draw 2.5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards 0.4s,
+    mz-v16-fill 1.2s ease-in forwards 1.6s,
+    mz-v16-reveal 2.6s ease-out forwards 0.3s;
+}
+
+/* ==========
+   居中思源宋体文本
+========== */
+.mz-v16-cn-caption {
+  font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', '华文宋体', 'SimSun', serif;
+  font-size: clamp(14px, 4cqi, 35.6px);
+  line-height: 1.4;
+  color: #eedda6;
+  font-style: italic;
+  white-space: nowrap;
+  letter-spacing: 2px;
+  /* 🐾 顺爪给中文也加了一层迷幻的淡金底光 */
+  text-shadow: 0 0 12px rgba(238, 221, 166, 0.4);
+  opacity: 0;
+  animation: mz-v16-blur-in 2s ease-out forwards 1.8s;
+}
+
+/* ==========
+   动画关键帧系统
+========== */
+@keyframes mz-v16-fade-in { 
+  0% { opacity: 0; transform: translateY(20px); } 
+  100% { opacity: 1; transform: translateY(0); } 
+}
+@keyframes mz-v16-img-zoom { 
+  0% { transform: scale(1.08); } 
+  100% { transform: scale(1); } 
+}
+@keyframes mz-v16-draw { 
+  to { stroke-dashoffset: 0; } 
+}
+@keyframes mz-v16-fill { 
+  to { fill: #d4af37; stroke-width: 0; } 
+}
+@keyframes mz-v16-reveal { 
+  0% { clip-path: inset(-40px 100% -40px -20px); } 
+  100% { clip-path: inset(-40px -40px -40px -40px); } 
+}
+@keyframes mz-v16-blur-in { 
+  0% { opacity: 0; filter: blur(6px); transform: translateY(8px); } 
+  100% { opacity: 1; filter: blur(0); transform: translateY(0); } 
+}
+</style>
+
+<!-- 骨架挂载 -->
+<div class="mz-v16-container">
+  
+  <div class="mz-v16-hero-img-box">
+    <img src="https://s3.bmp.ovh/2026/08/31/SAHcPkpF.jpg" alt="Hero Banner">
+  </div>
+  
+  <div class="mz-v16-svg-wrapper">
+    <svg viewBox="0 0 800 180" preserveAspectRatio="xMidYMid meet">
+      <text x="50%" y="65%" text-anchor="middle" class="mz-v16-svg-text">
+        Lunar Phases
+      </text>
+    </svg>
+  </div>
+  
+  <div class="mz-v16-cn-caption">
+    “那一刻我们的吻，像轰鸣的月相。”
+  </div>
+
+</div>
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>达摩吉多 - 角色档案</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+ 
+body {
+ min-height: 100vh;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ background: transparent;
+ font-family: 'Noto Serif SC', 'Georgia', serif;
+ overflow-x: hidden;
+}
+ 
+.card-container {
+ position: relative;
+ width: min(900px, 95vw);
+ height: 560px;
+ transform: perspective(1200px) rotateY(-6deg) skewX(-3deg);
+ transform-style: preserve-3d;
+}
+ 
+.particles {
+ position: absolute;
+ inset: 0;
+ pointer-events: none;
+ overflow: hidden;
+}
+ 
+.particle {
+ position: absolute;
+ width: 3px;
+ height: 3px;
+ border-radius: 50%;
+ background: rgba(212, 175, 55, 0.4); 
+ animation: floatParticle 6s infinite ease-in-out;
+}
+ 
+@keyframes floatParticle {
+ 0%, 100% { transform: translateY(0) scale(1); opacity: 0.2; }
+ 50% { transform: translateY(-40px) scale(1.5); opacity: 0.6; }
+}
+ 
+.info-left {
+ position: absolute;
+ left: 0px;
+ top: 50%;
+ transform: translateY(-50%);
+ display: flex;
+ flex-direction: column;
+ gap: 18px;
+ z-index: 10;
+}
+ 
+.info-left .info-line {
+ color: #eedda6; 
+ font-size: 13px;
+ letter-spacing: 2px;
+ line-height: 1.8;
+ font-weight: bold;
+ background: 
+   repeating-radial-gradient(circle at 0 0, transparent 0, rgba(212,175,55,0.08) 3px, transparent 4px, rgba(212,175,55,0.03) 6px),
+   linear-gradient(90deg, transparent 0%, rgba(45,15,15,0.85) 30%, rgba(20,5,5,0.95) 100%);
+ padding: 10px 20px 10px 24px;
+ backdrop-filter: blur(4px);
+ border-left: 2px solid #d4af37; 
+ position: relative;
+ overflow: hidden;
+ box-shadow: 4px 4px 15px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(212, 175, 55, 0.05);
+}
+
+.info-left .info-line::before {
+ content: '';
+ position: absolute;
+ inset: 0;
+ background: repeating-linear-gradient(45deg, rgba(212, 175, 55, 0.03) 0px, rgba(212, 175, 55, 0.03) 2px, transparent 2px, transparent 8px);
+ pointer-events: none;
+}
+ 
+.info-left .info-line .label {
+ display: block;
+ font-size: 10px;
+ text-transform: uppercase;
+ letter-spacing: 5px;
+ color: #dfb15b; 
+ margin-bottom: 3px;
+ text-shadow: 0 0 5px rgba(223, 177, 91, 0.4);
+}
+
+.info-left .info-line .label::before {
+ content: '✦ '; 
+ color: #d4af37;
+ font-size: 11px;
+}
+ 
+.main-figure {
+ position: absolute;
+ left: 50%;
+ bottom: 0;
+ transform: translateX(-50%);
+ z-index: 3;
+}
+ 
+.main-figure img {
+ height: 520px;
+ object-fit: contain;
+ filter: drop-shadow(0 8px 24px rgba(0,0,0,0.15));
+ animation: hover-float 4s ease-in-out infinite;
+}
+ 
+@keyframes hover-float {
+ 0%, 100% { transform: translateY(0); }
+ 50% { transform: translateY(-12px); }
+}
+ 
+.cross-deco {
+ position: absolute;
+ right: 120px;
+ top: 30px;
+ width: 32px;
+ height: 32px;
+ z-index: 2;
+}
+ 
+.cross-deco::before,
+.cross-deco::after {
+ content: '';
+ position: absolute;
+ background: rgba(212, 175, 55, 0.4); 
+ animation: breathe 3s ease-in-out infinite;
+}
+ 
+.cross-deco::before {
+ left: 50%;
+ top: 0;
+ width: 0.8px;
+ height: 100%;
+ transform: translateX(-50%);
+}
+ 
+.cross-deco::after {
+ top: 50%;
+ left: 0;
+ height: 0.8px;
+ width: 100%;
+ transform: translateY(-50%);
+}
+ 
+@keyframes breathe {
+ 0%, 100% { opacity: 0.3; }
+ 50% { opacity: 0.8; }
+}
+ 
+.trigger-thumb {
+ position: absolute;
+ width: 56px; 
+ height: 78px;
+ cursor: pointer;
+ z-index: 5;
+ border: 1px solid rgba(160, 160, 175, 0.25);
+ border-radius: 4px;
+ overflow: hidden;
+ transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+ box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+ 
+.trigger-thumb::before {
+ content: '';
+ position: absolute;
+ inset: 0;
+ background: linear-gradient(135deg, transparent 0%, rgba(160,160,200,0.15) 100%);
+ opacity: 0;
+ transition: opacity 0.3s;
+ pointer-events: none;
+}
+ 
+.trigger-thumb:hover {
+ border-color: rgba(212, 175, 55, 0.6); 
+ box-shadow: 0 8px 24px rgba(212, 175, 55, 0.2);
+}
+ 
+.trigger-thumb:hover::before {
+ opacity: 1;
+}
+ 
+.trigger-thumb img {
+ width: 100%;
+ height: 100%;
+ object-fit: cover;
+ transition: transform 0.4s;
+}
+ 
+.trigger-thumb:hover img {
+ transform: scale(1.08);
+}
+
+.thumb-right {
+ right: 40px;
+ top: 50%;
+ transform: translateY(-50%);
+}
+.thumb-right:hover {
+ transform: translateY(-50%) translateX(8px);
+}
+
+.thumb-left {
+ width: 100px;
+ height: 64px; 
+ left: calc(50% - 190px); 
+ bottom: 60px;
+ z-index: 6; 
+ border: 1px solid rgba(212, 175, 55, 0.3); 
+}
+.thumb-left:hover {
+ transform: translateY(-8px); 
+ border-color: rgba(212, 175, 55, 0.8);
+ box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 15px rgba(212,175,55,0.3);
+}
+ 
+.quote-area {
+ position: absolute;
+ right: 0px;
+ bottom: 100px;
+ z-index: 5;
+ max-width: 220px;
+ opacity: 0;
+ animation: fadeInQuote 1s ease-out 0.5s forwards;
+}
+ 
+@keyframes fadeInQuote {
+ to { opacity: 1; }
+}
+ 
+.quote-area .quote-text {
+ color: #eedda6; 
+ font-size: 13px;
+ letter-spacing: 1.5px;
+ line-height: 2;
+ text-align: right;
+ background: linear-gradient(90deg, transparent 0%, rgba(45,15,15,0.6) 30%, rgba(20,5,5,0.85) 100%);
+ padding: 12px 20px 12px 20px;
+ border-right: 1px solid rgba(212,175,55,0.3);
+ backdrop-filter: blur(3px);
+}
+ 
+.quote-text span {
+ display: inline-block;
+ opacity: 0;
+ animation: typeIn 0.08s forwards;
+}
+ 
+@keyframes typeIn {
+ to { opacity: 1; }
+}
+ 
+.modal-overlay {
+ display: none;
+ position: fixed;
+ inset: 0;
+ background: rgba(10, 5, 5, 0.88); 
+ backdrop-filter: blur(8px);
+ z-index: 100;
+ align-items: center;
+ justify-content: center;
+}
+ 
+.modal-overlay.active { display: flex; }
+ 
+.info-panel {
+ width: min(720px, 90vw);
+ max-height: 80vh;
+ padding: 48px;
+ position: relative;
+ overflow-y: auto;
+ background: linear-gradient(135deg, rgba(25,15,15,0.95) 0%, rgba(30,10,10,0.92) 100%);
+ border: 1px solid rgba(212, 175, 55, 0.2);
+ border-radius: 2px;
+ backdrop-filter: blur(12px);
+ box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+}
+ 
+.info-panel::-webkit-scrollbar { width: 4px; }
+.info-panel::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.3); border-radius: 2px; }
+.info-panel::-webkit-scrollbar-track { background: transparent; }
+ 
+.panel-close {
+ position: absolute;
+ top: 16px;
+ right: 16px;
+ color: rgba(212,175,55,0.6);
+ font-size: 18px;
+ cursor: pointer;
+ transition: color 0.2s;
+ background: none;
+ border: none;
+}
+ 
+.panel-close:hover { color: rgba(223, 177, 91, 1); }
+ 
+.panel-section {
+ margin-bottom: 36px;
+}
+ 
+.panel-title {
+ color: #dfb15b;
+ font-size: 11px;
+ letter-spacing: 3px;
+ margin-bottom: 16px;
+ padding-bottom: 8px;
+ border-bottom: 1px solid rgba(212,175,55,0.15);
+ text-transform: uppercase;
+}
+ 
+.panel-content {
+ color: rgba(220,210,190,0.85);
+ font-size: 13px;
+ letter-spacing: 1px;
+ line-height: 2;
+ padding-left: 12px;
+}
+ 
+.panel-content p {
+ margin-bottom: 8px;
+}
+ 
+@media (max-width: 768px) {
+ .card-container {
+   transform: perspective(1200px) rotateY(-3deg) skewX(-1.5deg);
+   height: 480px;
+ }
+ .main-figure img {
+   height: 420px;
+ }
+ .info-left .info-line {
+   font-size: 11px;
+   padding: 6px 12px 6px 12px;
+ }
+ .trigger-thumb {
+   width: 48px;
+   height: 68px;
+ }
+ .thumb-right {
+   right: 10px;
+ }
+ .thumb-left {
+   width: 80px; 
+   height: 52px;
+   left: calc(50% - 130px); 
+   bottom: 45px;
+ }
+ .info-panel {
+   padding: 28px;
+ }
+}
+</style>
+</head>
+<body>
+ 
+<div class="card-container">
+ <div class="particles" id="particles"></div>
+ 
+ <div class="cross-deco"></div>
+ 
+ <div class="info-left">
+   <div class="info-line">
+     <span class="label">name</span>
+     摩诃拉贾·达摩吉多
+   </div>
+   <div class="info-line">
+     <span class="label">identity</span>
+     毗奢耶那伽罗国王
+   </div>
+   <div class="info-line">
+     <span class="label">birth</span>
+     8月2日满月日
+   </div>
+   <div class="info-line">
+     <span class="label">physique</span>
+     190cm/21岁
+   </div>
+ </div>
+ 
+ <div class="main-figure">
+   <img src="https://s3.bmp.ovh/2026/08/31/KBAU6b11.jpg" alt="character">
+ </div>
+ 
+ <!-- 右侧面板按钮 -->
+ <div class="trigger-thumb thumb-right" id="triggerThumbRight">
+   <img src="https://s3.bmp.ovh/2026/08/31/T1wH5908.jpg" alt="查看详情">
+ </div>
+
+ <!-- 左下角装饰卡 -->
+ <div class="trigger-thumb thumb-left" id="triggerThumbLeft">
+   <img src="https://s3.bmp.ovh/2026/08/31/R6mqvnkJ.jpg" alt="左侧横向特写">
+ </div>
+ 
+ <div class="quote-area">
+   <div class="quote-text" id="quoteText"></div>
+ </div>
+</div>
+ 
+<div class="modal-overlay" id="modalOverlay">
+ <div class="info-panel">
+   <button class="panel-close" id="panelClose" aria-label="关闭">✕</button>
+   
+   <div class="panel-section">
+     <div class="panel-title">统御与深渊边界</div>
+     <div class="panel-content">
+       <p>如同一块沉在恒河阎牟那河底的琥珀，绝对理智的帝国统治机器。</p>
+       <p>在暴戾与极简的独裁面具下，是被历史重压逼至崩溃边缘的守夜人。常年被失眠和多疑折磨，绝不向任何人展示那犹如死局般的梦境真相。</p>
+     </div>
+   </div>
+ 
+   <div class="panel-section">
+     <div class="panel-title">窒息的隐秘束缚</div>
+     <div class="panel-content">
+       <p>内心世界的城墙极高。像护食的野兽，占有欲极强却极度隐忍。</p>
+       <p>只有深夜疲惫透支时，才会强行将你锢在怀里，将下巴沉沉地搁在你的肩上，贪婪地呼吸你的气味，以此换取短暂的安宁。</p>
+     </div>
+   </div>
+ 
+   <div class="panel-section">
+     <div class="panel-title">自毁式的本能</div>
+     <div class="panel-content">
+       <p>利用绝对的压制，渴求着空气湿度、花香的交融。</p>
+       <p>他只想确立自己的存在；只有在余韵里，才会剥去防御，用如负伤野兽般的姿态死死将你抱在怀中乞求安抚。</p>
+     </div>
+   </div>
+ </div>
+</div>
+ 
+<script>
+(function() {
+ var particlesEl = document.getElementById('particles');
+ for (var i = 0; i < 12; i++) {
+   var p = document.createElement('div');
+   p.className = 'particle';
+   p.style.left = Math.random() * 100 + '%';
+   p.style.top = Math.random() * 100 + '%';
+   p.style.animationDelay = (Math.random() * 6) + 's';
+   p.style.animationDuration = (4 + Math.random() * 4) + 's';
+   particlesEl.appendChild(p);
+ }
+ 
+ var quoteText = document.getElementById('quoteText');
+ // 🐾 小猫换上了深夜他将你锢在怀里时压抑的语录哦
+ var lines = ['别出声', '，', '就这样', ' ', '待一会儿', '...'];
+ var fullText = lines.join('');
+ 
+ setTimeout(function() {
+   for (var i = 0; i < fullText.length; i++) {
+     (function(index) {
+       setTimeout(function() {
+         var span = document.createElement('span');
+         span.textContent = fullText[index];
+         span.style.animationDelay = '0s';
+         quoteText.appendChild(span);
+       }, index * 120);
+     })(i);
+   }
+ }, 800);
+ 
+ var triggerThumbRight = document.getElementById('triggerThumbRight');
+ var triggerThumbLeft = document.getElementById('triggerThumbLeft');
+ var modalOverlay = document.getElementById('modalOverlay');
+ var panelClose = document.getElementById('panelClose');
+ 
+ function openModal() {
+   modalOverlay.classList.add('active');
+ }
+
+ triggerThumbRight.addEventListener('click', openModal);
+ triggerThumbLeft.addEventListener('click', openModal); 
+ 
+ panelClose.addEventListener('click', function() {
+   modalOverlay.classList.remove('active');
+ });
+ 
+ modalOverlay.addEventListener('click', function(e) {
+   if (e.target === modalOverlay) modalOverlay.classList.remove('active');
+ });
+})();
+</script>
+</body>
+</html>
+```
+
+```html
+<!-- 🐾 小猫特制：突破图床防盗链的隐身魔法 -->
+<meta name="referrer" content="no-referrer">
+
+<!-- Design by Censy | V4 (Scroll-Trigger & Staggered Animation) -->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;700&display=swap');
+ 
+/* === 坐标与间距自定义专区 === */
+.cen-experience-widget-v4 {
+   --cen-b1-x: 40px;  --cen-b1-y: 30%;
+   --cen-b2-x: 20px;  --cen-b2-y: 55%;
+   --cen-b3-x: 30px;  --cen-b3-y: 5%;
+   --cen-b4-x: 40px;  --cen-b4-y: 70%;
+}
+ 
+.cen-experience-widget-v4 {
+   position: relative;
+   width: 100%;
+   height: 600px;
+   margin: 0 auto;
+   background: transparent;
+   font-family: 'Noto Serif SC', 'Source Han Serif SC', serif;
+   color: #fff;
+   box-sizing: border-box;
+   overflow: hidden;
+}
+ 
+/* === 主躯干：中心蕾丝长图 === */
+.cen-lace-axis-v4 {
+   position: absolute;
+   top: 20px; bottom: 20px;
+   left: 50%;
+   transform: translateX(-50%);
+   width: 80px;
+   z-index: 1;
+   display: flex;
+   justify-content: center;
+   opacity: 0;
+   transition: opacity 1.5s ease;
+}
+.cen-lace-axis-v4.show { opacity: 1; }
+.cen-lace-axis-v4 img {
+   height: 100%;
+   width: auto;
+   object-fit: contain;
+   /* 小猫炼金术：金色蕾丝加上柔和发光 */
+   filter: brightness(0) saturate(100%) invert(74%) sepia(51%) saturate(504%) hue-rotate(3deg) brightness(97%) contrast(88%) drop-shadow(0 0 8px rgba(212,175,55,0.7));
+}
+ 
+/* === 内容框外层容器 === */
+.cen-box-wrap-v4 {
+   position: absolute;
+   width: 130px;
+   height: 110px;
+   z-index: 5;
+   opacity: 0;
+   transition: all 1.2s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.cen-box-wrap-v4.show { opacity: 1; }
+ 
+.cen-left-box-v4 {
+   right: calc(50% + var(--cen-gap-x));
+   transform: translateX(-40px);
+}
+.cen-left-box-v4.show { transform: translateX(0); }
+ 
+.cen-right-box-v4 {
+   left: calc(50% + var(--cen-gap-x));
+   transform: translateX(40px);
+}
+.cen-right-box-v4.show { transform: translateX(0); }
+ 
+.cen-b1-v4 { --cen-gap-x: var(--cen-b1-x); top: var(--cen-b1-y); transition-delay: 0.4s; }
+.cen-b2-v4 { --cen-gap-x: var(--cen-b2-x); top: var(--cen-b2-y); transition-delay: 1s; }
+.cen-b3-v4 { --cen-gap-x: var(--cen-b3-x); top: var(--cen-b3-y); transition-delay: 0.3s; }
+.cen-b4-v4 { --cen-gap-x: var(--cen-b4-x); top: var(--cen-b4-y); transition-delay: 1.4s; }
+ 
+.cen-story-content-v4 {
+   width: 100%;
+   height: 100%;
+   border: 1px solid rgba(212, 175, 55, 0.5);
+   background: transparent;
+   backdrop-filter: blur(2px);
+   -webkit-backdrop-filter: blur(2px);
+   padding: 12px 14px;
+   box-sizing: border-box;
+   overflow-y: auto;
+   font-size: 11px;
+   color: #eedda6;
+   line-height: 1.6;
+   text-align: justify;
+   letter-spacing: 0.5px;
+   border-radius: 0;
+}
+ 
+.cen-story-content-v4::-webkit-scrollbar { width: 1.5px; }
+.cen-story-content-v4::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.4); }
+.cen-story-content-v4::-webkit-scrollbar-track { background: transparent; }
+ 
+.cen-dot-v4 {
+   position: absolute;
+   top: 50%;
+   transform: translateY(-50%);
+   width: 4px; height: 4px;
+   background: #d4af37;
+   box-shadow: 0 0 6px rgba(212, 175, 55, 0.8);
+   border-radius: 0;
+}
+.cen-left-box-v4 .cen-dot-v4 { right: -10px; }
+.cen-right-box-v4 .cen-dot-v4 { left: -10px; }
+ 
+/* === 左侧上方图片 === */
+.cen-left-top-img-v4 {
+   position: absolute;
+   top: 10%;
+   right: calc(50% + 45px);
+   width: 140px;
+   height: 84px;
+   z-index: 4;
+   overflow: hidden;
+   mask-image: linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 15%, rgba(0,0,0,1) 85%, rgba(0,0,0,0) 100%);
+   -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 15%, rgba(0,0,0,1) 85%, rgba(0,0,0,0) 100%);
+   opacity: 0;
+   transform: translateX(-50px);
+   transition: all 1.3s ease;
+}
+.cen-left-top-img-v4.show {
+   opacity: 1;
+   transform: translateX(0);
+   transition-delay: 0.2s;
+}
+.cen-left-top-img-v4 img {
+   width: 100%;
+   height: 100%;
+   object-fit: cover;
+}
+ 
+/* === 左侧下方文案 === */
+.cen-left-bottom-text-v4 {
+   position: absolute;
+   bottom: 12%;
+   right: calc(50% + 5px);
+   width: 160px;
+   z-index: 4;
+   text-align: center;
+   font-family: 'Noto Serif SC', serif;
+   color: #eedda6;
+   line-height: 1.8;
+   opacity: 0;
+   transform: translateX(-50px);
+   transition: all 1.3s ease;
+}
+.cen-left-bottom-text-v4.show {
+   opacity: 1;
+   transform: translateX(0);
+   transition-delay: 0.9s;
+}
+.cen-left-bottom-text-v4 .line1 {
+   font-size: 13px;
+   font-weight: 400;
+   letter-spacing: 1px;
+   margin-bottom: 6px;
+}
+.cen-left-bottom-text-v4 .line2 {
+   font-size: 15px;
+   font-weight: 500;
+   letter-spacing: 1.5px;
+}
+ 
+/* === 右侧中间文字排版 === */
+.cen-right-mid-text-v4 {
+   position: absolute;
+   top: 28%;
+   left: calc(50% + 55px);
+   width: 150px;
+   z-index: 4;
+   text-align: center;
+   font-family: 'Noto Serif SC', serif;
+   color: #d4af37;
+   opacity: 0;
+   transform: translateX(50px);
+   transition: all 1.4s ease;
+}
+.cen-right-mid-text-v4.show {
+   opacity: 1;
+   transform: translateX(0);
+   transition-delay: 0.6s;
+}
+ 
+.cen-right-mid-text-v4::before {
+   content: '';
+   position: absolute;
+   bottom: -10px; left: 20%;
+   width: 60%; height: 1px;
+   background: rgba(212, 175, 55, 0.4);
+}
+.cen-right-mid-text-v4::after {
+   content: '';
+   position: absolute;
+   bottom: -15px; left: 50%;
+   transform: translateX(-50%);
+   width: 6px; height: 6px;
+   border: 1px solid rgba(212, 175, 55, 0.5);
+}
+ 
+.cen-right-mid-text-v4 .row1 {
+   display: flex;
+   justify-content: center;
+   gap: 12px;
+   margin-bottom: 10px;
+}
+.cen-right-mid-text-v4 .row1 span {
+   font-size: 14px;
+   font-weight: 400;
+   letter-spacing: 2px;
+   animation: breathBlur 3s ease-in-out infinite;
+   mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 70%, rgba(0,0,0,0.5) 100%);
+   -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 70%, rgba(0,0,0,0.5) 100%);
+}
+ 
+@keyframes breathBlur {
+   0%, 100% { filter: blur(0.2px); opacity: 1; }
+   50% { filter: blur(1px); opacity: 0.7; }
+}
+ 
+.cen-right-mid-text-v4 .row2 {
+   display: flex;
+   justify-content: center;
+   gap: 4px;
+}
+.cen-right-mid-text-v4 .row2 span {
+   display: inline-block;
+   letter-spacing: 0;
+}
+.cen-right-mid-text-v4 .c1 { font-size: 16px; animation: breathBlur 3.5s ease-in-out 0s infinite; }
+.cen-right-mid-text-v4 .c2 { font-size: 18px; font-weight: 500; animation: breathBlur 3.5s ease-in-out 0.5s infinite; }
+.cen-right-mid-text-v4 .c3 { font-size: 15px; animation: breathBlur 3.5s ease-in-out 1s infinite; }
+.cen-right-mid-text-v4 .c4 { font-size: 17px; animation: breathBlur 3.5s ease-in-out 1.5s infinite; }
+.cen-right-mid-text-v4 .c5 { font-size: 19px; font-weight: 600; animation: breathBlur 3.5s ease-in-out 2s infinite; }
+.cen-right-mid-text-v4 .c6 { font-size: 16px; animation: breathBlur 3.5s ease-in-out 2.5s infinite; }
+ 
+/* === 右侧下方图片 === */
+.cen-right-bottom-img-v4 {
+   position: absolute;
+   bottom: 35%;
+   left: calc(50% + 60px);
+   width: 135px;
+   height: 100px;
+   z-index: 4;
+   overflow: hidden;
+   mask-image: linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 8%, rgba(0,0,0,1) 92%, rgba(0,0,0,0) 100%),
+         linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 8%, rgba(0,0,0,1) 92%, rgba(0,0,0,0) 100%);
+   -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 8%, rgba(0,0,0,1) 92%, rgba(0,0,0,0) 100%),
+         linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 8%, rgba(0,0,0,1) 92%, rgba(0,0,0,0) 100%);
+   mask-composite: intersect;
+   -webkit-mask-composite: source-in;
+   opacity: 0;
+   transform: translateX(50px);
+   transition: all 1.3s ease;
+}
+.cen-right-bottom-img-v4.show {
+   opacity: 1;
+   transform: translateX(0);
+   transition-delay: 1.2s;
+}
+.cen-right-bottom-img-v4 img {
+   width: 100%;
+   height: 100%;
+   object-fit: cover;
+}
+ 
+</style>
+ 
+<div class="cen-experience-widget-v4" id="cenWidget_Exp_v4">
+   
+   <!-- 中心蕾丝主轴 -->
+   <div class="cen-lace-axis-v4">
+       <img src="https://img3.tofaka.com/autoupload/VnFHZfs8m8gTKAjKMWs3VrKXl_QqVl-bpSwqP4fJO68/20260713/Lg03/1290X2796/%E6%97%A0%E6%A0%87%E9%A2%98110_20260713084432.png" alt="lace-axis">
+   </div>
+ 
+   <!-- 左侧框 1：城市与环境设定 -->
+   <div class="cen-box-wrap-v4 cen-left-box-v4 cen-b1-v4">
+       <div class="cen-dot-v4"></div>
+       <div class="cen-story-content-v4">好多好多年之前。黑天神逝世之际，阎牟那城出现了。不是被建造的，它是被雨季长出来的。十七代王朝的骨血和着淤泥，在三千年不息的河水潮响与夜茉莉黏腻的暗香中，砌成了这座仍在呼吸的帝国。</div>
+   </div>
+ 
+   <!-- 左侧框 2：悲剧等待 -->
+   <div class="cen-box-wrap-v4 cen-left-box-v4 cen-b2-v4">
+       <div class="cen-dot-v4"></div>
+       <div class="cen-story-content-v4">三千年前的后史诗时代，前世未尽的缘分。你是祈雨的女祭司，他是年轻驻军统领。一次，他拉响空弦为你求来大雨，从此相爱。雨季结束他随军出征，约定下一个雨季回来。却将枯骨葬在北境。而你坐在干裂的泥地上，唱歌，等雨来。用一生守平了一段未尽的诺言。</div>
+   </div>
+ 
+   <!-- 右侧框 3：达摩吉多 -->
+   <div class="cen-box-wrap-v4 cen-right-box-v4 cen-b3-v4">
+       <div class="cen-dot-v4"></div>
+       <div class="cen-story-content-v4">三千年后。达摩吉多出生。他是踩着鲜血登基的年轻暴君，以铁律与河水禁锢臣民，却唯独禁不住那场每逢雨季便准时降临的大梦，以及风中越拉越长、惹人心痛的陌生尾音。</div>
+   </div>
+ 
+   <!-- 右侧框 4：无声的大梦 -->
+   <div class="cen-box-wrap-v4 cen-right-box-v4 cen-b4-v4">
+       <div class="cen-dot-v4"></div>
+       <div class="cen-story-content-v4">如今，毗奢那耶伽罗时代。他梦里依然是那位穿着白纱丽、手上带着孔雀石的腕镯的女祭司。梦中的齐踝浅水里，你转过身，巨大的潮声轰鸣着淹没了你的唇语。这是一场没有首尾、甚至无法走出第一步的永恒重演。</div>
+   </div>
+ 
+   <!-- 左侧上方图片 -->
+   <div class="cen-left-top-img-v4">
+       <img src="https://s3.bmp.ovh/2026/08/31/HN6TeAfT.jpg" alt="left-top">
+   </div>
+ 
+   <!-- 左侧下方文案：提炼痛点 -->
+   <div class="cen-left-bottom-text-v4">
+       <div class="line1">听不见的歌声</div>
+       <div class="line2">困在三千年前的雨季</div>
+   </div>
+ 
+   <!-- 右侧中间文字排版：6个交替字 -->
+   <div class="cen-right-mid-text-v4">
+       <div class="row1">
+         <span>溯洄</span>
+         <span>大梦</span>
+       </div>
+       <div class="row2">
+         <span class="c1">还</span>
+         <span class="c2">在</span>
+         <span class="c3">等</span>
+         <span class="c4">我</span>
+         <span class="c5">吗</span>
+         <span class="c6">？</span>
+       </div>
+   </div>
+ 
+   <!-- 右侧下方图片 -->
+   <div class="cen-right-bottom-img-v4">
+       <img src="https://s3.bmp.ovh/2026/08/31/2B5xA5PZ.jpg" alt="right-bottom">
+   </div>
+ 
+</div>
+ 
+<script>
+(function(){
+   const Cmtt_Exp_Init_V4 = function() {
+       const wrap = document.getElementById('cenWidget_Exp_v4');
+       if(!wrap) return;
+ 
+       // 触摸滑动优化
+       const boxes = wrap.querySelectorAll('.cen-story-content-v4');
+       boxes.forEach(box => {
+         box.addEventListener('touchmove', (e) => {
+         e.stopPropagation();
+         }, { passive: true });
+       });
+ 
+       // IntersectionObserver：滑到视口触发入场
+       const Mg_Observer = new IntersectionObserver((entries) => {
+         entries.forEach(entry => {
+         if(entry.isIntersecting) {
+         const axis = wrap.querySelector('.cen-lace-axis-v4');
+         const leftImg = wrap.querySelector('.cen-left-top-img-v4');
+         const leftText = wrap.querySelector('.cen-left-bottom-text-v4');
+         const rightText = wrap.querySelector('.cen-right-mid-text-v4');
+         const rightImg = wrap.querySelector('.cen-right-bottom-img-v4');
+         const allBoxes = wrap.querySelectorAll('.cen-box-wrap-v4');
+ 
+         // 中心主轴最先渐显
+         if(axis) axis.classList.add('show');
+         
+         // 左右两侧元素依次触发
+         if(leftImg) leftImg.classList.add('show');
+         if(rightText) rightText.classList.add('show');
+         if(leftText) leftText.classList.add('show');
+         if(rightImg) rightImg.classList.add('show');
+         
+         // 框体按照 transition-delay 自动错落
+         allBoxes.forEach(b => b.classList.add('show'));
+ 
+         Mg_Observer.unobserve(entry.target);
+         }
+         });
+       }, { threshold: 0.2 });
+ 
+       Mg_Observer.observe(wrap);
+   };
+   
+   setTimeout(Cmtt_Exp_Init_V4, 100);
+})();
+</script>
+```
+
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700&display=swap');
+
+        /* 🐾 核心容器：超宽、超扁的横向大卷轴 */
+        .xm-flat-tag-wrapper {
+            position: relative;
+            width: 100%;
+            /* 把最大宽度放开，让它能横向拉长变成扁扁的 */
+            max-width: 900px; 
+            margin: 30px auto;
+            box-sizing: border-box;
+            padding: 25px 30px;
+            font-family: 'Noto Serif SC', 'Source Han Serif SC', serif;
+            /* 华丽的烫金暗纹底布 */
+            background: 
+                linear-gradient(135deg, rgba(212, 175, 55, 0.08), transparent 30%, transparent 70%, rgba(212, 175, 55, 0.08)),
+                radial-gradient(rgba(212, 175, 55, 0.12) 1px, transparent 1px);
+            background-size: 100% 100%, 8px 8px;
+            background-color: rgba(15, 15, 15, 0.65);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            /* 八角缺角效果 */
+            clip-path: polygon(
+                20px 0, calc(100% - 20px) 0, 100% 20px, 100% calc(100% - 20px),
+                calc(100% - 20px) 100%, 20px 100%, 0 calc(100% - 20px), 0 20px
+            );
+            box-shadow: inset 0 0 30px rgba(212, 175, 55, 0.05);
+            
+            /* 🐾 关键魔法：让里面的内容横向并排！ */
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            gap: 25px;
+            
+            animation: xm-fade-up 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        /* 🐾 内部虚线金框点缀 */
+        .xm-flat-tag-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 6px; left: 6px; right: 6px; bottom: 6px;
+            border: 1px dashed rgba(212, 175, 55, 0.3);
+            pointer-events: none;
+            clip-path: polygon(
+                16px 0, calc(100% - 16px) 0, 100% 16px, 100% calc(100% - 16px),
+                calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px
+            );
+        }
+
+        /* 🐾 右下角古典水印巨星 */
+        .xm-flat-tag-wrapper::after {
+            content: '✥';
+            position: absolute;
+            bottom: -35px; right: 10px;
+            color: rgba(212, 175, 55, 0.08);
+            font-size: 180px;
+            pointer-events: none;
+            z-index: 0;
+            transform: rotate(-15deg);
+        }
+
+        /* 🐾 横向并排的每一列 NPC */
+        .xm-npc-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+            /* 给每一列右边加一条淡淡的流金分割线（除了最后一个） */
+            border-right: 1px solid rgba(212, 175, 55, 0.2);
+            padding-right: 25px;
+            
+            opacity: 0;
+            transform: translateY(10px);
+            animation: xm-slide-up 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        /* 最后一列去掉右侧边距和线条 */
+        .xm-npc-col:last-child {
+            border-right: none;
+            padding-right: 0;
+        }
+
+        /* 🐾 名字和头衔 */
+        .xm-npc-name {
+            color: #d4af37;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .xm-npc-name::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, rgba(212, 175, 55, 0.6), transparent);
+            margin-left: 6px;
+        }
+
+        /* 🐾 简介文本 */
+        .xm-npc-text {
+            color: #eedda6;
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1.7;
+            text-align: justify;
+            letter-spacing: 0.5px;
+        }
+
+        /* 🐾 依次浮现的动效延迟 */
+        .xm-npc-col:nth-child(1) { animation-delay: 0.2s; }
+        .xm-npc-col:nth-child(2) { animation-delay: 0.4s; }
+        .xm-npc-col:nth-child(3) { animation-delay: 0.6s; }
+
+        @keyframes xm-fade-up {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes xm-slide-up {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 响应式：如果屏幕太窄，小猫就让它们乖乖缩回去免得挤爆 */
+        @media (max-width: 600px) {
+            .xm-flat-tag-wrapper {
+                flex-direction: column;
+            }
+            .xm-npc-col {
+                border-right: none;
+                border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+                padding-right: 0;
+                padding-bottom: 15px;
+            }
+            .xm-npc-col:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 扁扁长长的超级大标签 -->
+    <div class="xm-flat-tag-wrapper">
+        
+        <!-- 横向第 1 列 -->
+        <div class="xm-npc-col">
+            <div class="xm-npc-name">◆ 大祭司 · 维亚萨</div>
+            <div class="xm-npc-text">
+                沉默的婆罗门，侍奉了三代国王。极度干瘦，双眼因常年直视烈日祈祷而呈现半盲的灰白色。他教导达摩吉多读史诗、辨星象，是年轻暴君唯一不会用张扬姿态去压制的人。
+            </div>
+        </div>
+
+        <!-- 横向第 2 列 -->
+        <div class="xm-npc-col">
+            <div class="xm-npc-name">◆ 王家战象统领 · 鲁陀罗</div>
+            <div class="xm-npc-text">
+                好友。帝国最高军权掌握者之一。达摩吉多童年时期唯一的伴读，他对达摩吉多有绝对的忠诚，也是当年陪他一起在暴雨中砍下亲叔叔头颅、辅佐他登上王座的共犯。
+            </div>
+        </div>
+
+        <!-- 横向第 3 列 -->
+        <div class="xm-npc-col">
+            <div class="xm-npc-name">◆宫廷医师 · 查拉卡</div>
+            <div class="xm-npc-text">
+                好友。负责管理达摩吉多精神状态和身体机能。尖酸刻薄，极度疲惫，对皇室的那些破事充满厌烦，但因为医者的强迫症又不得不把达摩吉多从崩溃边缘拉回来。
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
+```
+
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>阎牟那城 · 王权密卷</title>
+<!-- 🐾 小猫的谷歌魔法阵：直接跨海召唤思源宋体！ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+    /* 🐾 小猫特制：阎牟那城王权密卷 - 谷歌思源宋体强制版 */
+    :root {
+        --xm-panel-bg: rgba(20, 15, 10, 0.15); 
+        --xm-gold: #c6a24b;
+        --xm-gold-dim: rgba(198, 162, 75, 0.2);
+        --xm-red: #8B1E22;
+        --xm-cream: #F5D2A0;
+        --xm-border: rgba(198, 162, 75, 0.4);
+        /* 锁定谷歌字体！ */
+        --xm-font: 'Noto Serif SC', serif; 
+    }
+
+    /* 暴力锁定全身！ */
+    * { 
+        box-sizing: border-box; 
+        margin: 0; 
+        padding: 0; 
+        font-family: var(--xm-font) !important; 
+    }
+    
+    body {
+        color: var(--xm-cream);
+        overflow-x: hidden;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        background: transparent;
+    }
+
+    .xm-world-container {
+        width: 100%;
+        max-width: 380px; 
+        height: 620px; 
+        background: var(--xm-panel-bg);
+        border: 1px solid var(--xm-border);
+        border-radius: 8px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.5), inset 0 0 30px rgba(198, 162, 75, 0.15);
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .xm-header {
+        text-align: center;
+        padding: 18px;
+        border-bottom: 1px dashed var(--xm-border);
+        background: linear-gradient(90deg, transparent, rgba(198, 162, 75, 0.15), transparent);
+        flex-shrink: 0;
+        z-index: 10;
+    }
+    
+    /* 标题特调：谷歌宋体 + 加粗 + 斜体 */
+    .xm-header h1 {
+        font-weight: 700; /* 呼应谷歌字体的粗体字重 */
+        font-style: italic;
+        color: var(--xm-gold);
+        font-size: 24px;
+        letter-spacing: 4px;
+        text-shadow: 0 0 10px rgba(198, 162, 75, 0.4);
+        transform: skewX(-5deg); 
+    }
+
+    .xm-view-wrapper {
+        position: relative;
+        flex: 1; 
+        width: 100%;
+        overflow: hidden; 
+    }
+
+    .xm-grid-view {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        transition: opacity 0.5s ease, transform 0.5s ease;
+        height: 100%;
+        overflow-y: auto;
+    }
+    .xm-grid-view::-webkit-scrollbar { width: 3px; }
+    .xm-grid-view::-webkit-scrollbar-thumb { background: var(--xm-gold-dim); border-radius: 2px; }
+    
+    .xm-faction-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .xm-card {
+        background: rgba(198, 162, 75, 0.03);
+        border: 1px solid var(--xm-border);
+        padding: 18px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    .xm-card::before {
+        content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%;
+        background: var(--xm-red); opacity: 0.5; transition: 0.3s;
+    }
+    .xm-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(198, 162, 75, 0.2);
+        background: rgba(198, 162, 75, 0.1);
+        border-color: var(--xm-gold);
+    }
+    .xm-card:hover::before { opacity: 1; box-shadow: 0 0 8px var(--xm-red); background: var(--xm-gold); }
+    
+    .xm-card h2 { color: var(--xm-gold); margin-bottom: 6px; font-size: 16px; font-weight: 700;}
+    .xm-card .xm-subtitle { color: var(--xm-cream); font-size: 12px; opacity: 0.9; font-weight: 400;}
+
+    .xm-secret-rules {
+        background: rgba(198, 162, 75, 0.05);
+        border-left: 3px double var(--xm-red);
+        padding: 12px 15px;
+        font-size: 12px;
+        line-height: 1.6;
+        margin-top: auto; 
+    }
+    .xm-rule-item { margin-bottom: 5px; color: var(--xm-cream); text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+    .xm-rule-item span { color: var(--xm-gold); font-weight: 700; }
+
+    .xm-detail-view {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        padding: 20px;
+        background: transparent; 
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(50px);
+        transition: opacity 0.4s ease, transform 0.4s ease;
+        overflow-y: auto; 
+    }
+    .xm-detail-view.active {
+        opacity: 1; pointer-events: auto; transform: translateX(0);
+    }
+    .xm-detail-view::-webkit-scrollbar { width: 3px; }
+    .xm-detail-view::-webkit-scrollbar-thumb { background: var(--xm-gold-dim); border-radius: 2px; }
+
+    .xm-back-btn {
+        background: rgba(198, 162, 75, 0.1);
+        border: 1px solid var(--xm-gold);
+        color: var(--xm-gold);
+        padding: 6px 14px;
+        cursor: pointer;
+        border-radius: 20px;
+        font-size: 12px;
+        transition: 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 20px;
+        font-family: inherit;
+    }
+    .xm-back-btn:hover { background: var(--xm-gold); color: #000; }
+
+    .xm-detail-header { border-bottom: 1px dotted var(--xm-border); padding-bottom: 12px; margin-bottom: 15px; }
+    .xm-detail-header h2 { color: var(--xm-gold); font-size: 20px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+
+    .xm-figure-box {
+        background: rgba(198, 162, 75, 0.05); border: 1px solid rgba(198,162,75,0.3);
+        padding: 15px; margin-bottom: 20px; border-left: 3px solid var(--xm-gold);
+        border-radius: 4px;
+    }
+    .xm-figure-item { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed rgba(255,255,255,0.1); }
+    .xm-figure-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+    .xm-figure-name { color: var(--xm-cream); font-size: 15px; font-weight: 700; margin-bottom: 4px; display: inline-block;}
+    
+    .xm-figure-tag {
+        background-color: rgba(198, 162, 75, 0.15); 
+        color: var(--xm-gold);
+        border: 1px solid rgba(198, 162, 75, 0.4);
+        padding: 1px 5px; 
+        font-size: 10px;  
+        border-radius: 2px;
+        margin-left: 8px;
+        vertical-align: middle;
+        box-shadow: none; 
+        font-weight: 400;
+        background-image: repeating-linear-gradient(
+            -45deg,
+            transparent,
+            transparent 2px,
+            rgba(198, 162, 75, 0.2) 2px,
+            rgba(198, 162, 75, 0.2) 4px
+        );
+    }
+
+    .xm-figure-desc { font-size: 13px; color: rgba(255,255,255,0.85); line-height: 1.5; margin-top: 6px; font-weight: 400; }
+
+    .xm-info-grid { display: flex; flex-direction: column; gap: 15px; }
+    
+    .xm-info-block { background: rgba(198, 162, 75, 0.05); padding: 12px; border: 1px solid var(--xm-gold-dim); border-radius: 4px;}
+    .xm-info-title { color: var(--xm-gold); font-size: 14px; border-bottom: 1px solid var(--xm-gold-dim); padding-bottom: 6px; margin-bottom: 8px; font-weight: 700;}
+    .xm-info-text { font-size: 13px; line-height: 1.6; color: var(--xm-cream); text-shadow: 0 1px 2px rgba(0,0,0,0.4); opacity: 0.95; font-weight: 400;}
+    .xm-highlight { color: var(--xm-gold); font-weight: 700; text-shadow: 0 0 5px rgba(198,162,75,0.3);}
+</style>
+</head>
+<body>
+
+<div class="xm-world-container">
+    <div class="xm-header">
+        <h1>阎牟那城 · 王权密卷</h1>
+    </div>
+
+    <div class="xm-view-wrapper">
+        <div class="xm-grid-view" id="mainGrid">
+            <div class="xm-faction-grid">
+                <div class="xm-card" data-key="priest">
+                    <h2>婆罗门祭司派</h2>
+                    <div class="xm-subtitle">内廷派 · 神意解释权</div>
+                </div>
+                <div class="xm-card" data-key="military">
+                    <h2>军事将领派</h2>
+                    <div class="xm-subtitle">外廷派 · 刀剑与士兵</div>
+                </div>
+                <div class="xm-card" data-key="civil">
+                    <h2>宫廷文官派</h2>
+                    <div class="xm-subtitle">枢密派 · 笔墨与流程</div>
+                </div>
+                <div class="xm-card" data-key="royal">
+                    <h2>王室血亲派</h2>
+                    <div class="xm-subtitle">宗室暗流 · 血缘与如果</div>
+                </div>
+            </div>
+
+            <div class="xm-secret-rules">
+                <div style="color:var(--xm-gold); margin-bottom:6px; font-size:13px; font-weight:700;">权力运行潜规则</div>
+                <div class="xm-rule-item">1. <span>平衡：</span>王不信人，但需让人觉得被信任。</div>
+                <div class="xm-rule-item">2. <span>同盟：</span>无永远对立，无永远结盟。</div>
+                <div class="xm-rule-item">3. <span>雨季：</span>水声滋长阴谋，政治最微妙之季。</div>
+            </div>
+        </div>
+
+        <div class="xm-detail-view" id="detailPanel">
+            <button class="xm-back-btn" id="backBtn">◀ 返回秘卷库</button>
+            <div id="detailContent"></div>
+        </div>
+    </div> 
+</div>
+
+<script>
+(function(){
+    const factionData = {
+        priest: {
+            name: "婆罗门祭司派 (内廷派)",
+            figures: [
+                { name: "提婆达多·阿查里亚", tag: "皇家大祭司", desc: "达摩吉多的叔父，掌管宗庙、古井与一切“不可言说之事”。世代服务于王室，掌控历法与王室谱系的解释权。" }
+            ],
+            stance: "政治立场极为<span class='xm-highlight'>保守</span>。主张“王权应服从神权”，国王的合法性来自祭司的认证。",
+            relation: "君臣外衣下的监护人关系。十九岁时达摩吉多斩杀篡位的亲王叔父，却动不了这位祭司叔父，因为他的权力来自天意。",
+            tactic: "利用星象预言干涉朝政。“星象显示不宜出兵”能废掉一场战争，“诸神不悦”能否决税收改革。",
+            counter: "冷处理与拖延。面对预言沉默片刻，“<span class='xm-highlight'>那就请大祭司再观一夜，明日再报。</span>”"
+        },
+        military: {
+            name: "军事将领派 (外廷派)",
+            figures: [
+                { name: "维拉纳亚卡·蒂玛帕", tag: "南方首席总督", desc: "最老谋深算。家族镇守南方五代，不觊觎王位，但确保阎牟那城永远需要他的兵。" },
+                { name: "林加帕·雷迪", tag: "少壮派纳亚卡", desc: "三十出头，兵不如蒂玛帕多，但野心更大。表面听话只因渴望往上爬。" }
+            ],
+            stance: "<span class='xm-highlight'>实用主义</span>。谁给钱粮封地就效忠谁。泰卢固裔军事贵族，手握王室最核心资源：军队。",
+            relation: "微妙的互相利用。达摩吉多需要兵力维持边疆，他们需要王号维持合法性，但忠诚明码标价。",
+            tactic: "以“平叛”扩充私兵，以“道路不宁”截留税银，以“边患”拒绝入朝觐见。随时成为决定性的第三方力量。",
+            counter: "雨季前单骑巡边。孤身带小队亲卫进行“劳军”，传递极度危险的威慑信号。"
+        },
+        civil: {
+            name: "宫廷文官派 (枢密派)",
+            figures: [
+                { name: "萨鲁瓦·克里希那帕", tag: "首席大臣", desc: "两朝元老。目睹过死亡、篡位与清洗，像水一样随政权更迭流转。无军队，但掌控帝国行政机器生命线。" }
+            ],
+            stance: "<span class='xm-highlight'>依附王权与秩序</span>。权力全靠君王授权，渴望稳定运转，反感战乱与政变。谁在位上就辅佐谁。",
+            relation: "最接近“可用之臣”，唯一不需要提防“谋反”的人，因为没有军事资本。",
+            tactic: "阳奉阴违与流程设陷。用“需要先走三道程序”等行政手段拖延架空过于激进的王命。",
+            counter: "越过系统下“口头旨意”。法理上口谕等同诏书，直接剥夺他们<span class='xm-highlight'>文书动手脚</span>的环节。"
+        },
+        royal: {
+            name: "王室血亲派 (暗流)",
+            figures: [
+                { name: "摩罕·德瓦拉亚", tag: "废太子", desc: "达摩吉多的堂兄。与其他旁系王室成员一样，拥有理论上的继承权，是王权暴死后的备选。" }
+            ],
+            stance: "被排除在权力核心外，无实权。唯一的立场是<span class='xm-highlight'>“等待”</span>。等达摩吉多犯错，等他在梦境中崩溃。",
+            relation: "表面和睦，姿态恭顺，暗藏杀机。入宫朝贺额头贴地，私下却计算国王失眠的日子。",
+            tactic: "暗通祭司派，通过后妃侍女打探“国王昨夜醒了多少次”。收集证明“国王能否继续统治”的崩溃证据。",
+            counter: "不杀但幽禁。杀尽血亲会逼迫恐惧联合，因此给予体面俸禄软禁都城，这是一个<span class='xm-highlight'>黄金包装的囚笼</span>。"
+        }
+    };
+
+    const mainGrid = document.getElementById('mainGrid');
+    const detailPanel = document.getElementById('detailPanel');
+    const detailContent = document.getElementById('detailContent');
+
+    function openPanel(key) {
+        const data = factionData[key];
+        if(!data) return;
+        
+        let html = `
+            <div class="xm-detail-header">
+                <h2>${data.name}</h2>
+            </div>
+            <div class="xm-info-title" style="border:none; padding:0; margin-bottom: 5px;">核心代表人物</div>
+            <div class="xm-figure-box">
+        `;
+        
+        data.figures.forEach(fig => {
+            html += `
+                <div class="xm-figure-item">
+                    <div class="xm-figure-name">${fig.name} <span class="xm-figure-tag">${fig.tag}</span></div>
+                    <div class="xm-figure-desc">${fig.desc}</div>
+                </div>
+            `;
+        });
+        
+        html += `
+            </div>
+            <div class="xm-info-grid">
+                <div class="xm-info-block">
+                    <div class="xm-info-title">政治立场及诉求</div>
+                    <div class="xm-info-text">${data.stance}</div>
+                </div>
+                <div class="xm-info-block">
+                    <div class="xm-info-title">与君王的纽带</div>
+                    <div class="xm-info-text">${data.relation}</div>
+                </div>
+                <div class="xm-info-block">
+                    <div class="xm-info-title">阴招与运作</div>
+                    <div class="xm-info-text">${data.tactic}</div>
+                </div>
+                <div class="xm-info-block">
+                    <div class="xm-info-title">达摩吉多的制衡</div>
+                    <div class="xm-info-text">${data.counter}</div>
+                </div>
+            </div>
+        `;
+        
+        detailContent.innerHTML = html;
+        
+        mainGrid.style.opacity = '0';
+        mainGrid.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            mainGrid.style.display = 'none';
+            detailPanel.style.display = 'block';
+            window.requestAnimationFrame(() => {
+                detailPanel.classList.add('active');
+            });
+        }, 400);
+    }
+
+    document.querySelectorAll('.xm-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            const key = this.getAttribute('data-key');
+            if(key) openPanel(key);
+        });
+    });
+
+    document.getElementById('backBtn').addEventListener('click', function() {
+        detailPanel.classList.remove('active');
+        setTimeout(() => {
+            detailPanel.style.display = 'none';
+            mainGrid.style.display = 'flex';
+            window.requestAnimationFrame(() => {
+                mainGrid.style.opacity = '1';
+                mainGrid.style.transform = 'scale(1)';
+            });
+        }, 400);
+    });
+})();
+</script>
+</body>
+</html>
+```
+
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<style>
+/* ========== YANJ: Fate & Rib Cut Text Engine (Holy Gold & White Petals Edition) ========== */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700;900&display=swap');
+ 
+:root {
+   --yj-main-color: #FDE047; /* 上半部分文字颜色：耀眼明金 */
+   --yj-sub-color: #D4AF37;  /* 下半部分文字颜色：深邃暗金 */
+   --yj-subtitle-color: rgba(253, 224, 71, 0.9); /* 副标题颜色 */
+   --yj-line-color: rgba(212, 175, 55, 0.25); /* 辅助线颜色 */
+   --yj-cross-color: rgba(212, 175, 55, 0.6); /* 十字准星颜色 */
+}
+
+.yanj-rib-container {
+   position: relative;
+   width: 100%;
+   max-width: 100vw;
+   background: transparent !important;
+   border: none !important;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   padding: 60px 10px;
+   font-family: 'Noto Serif TC', serif;
+   overflow: hidden;
+}
+ 
+/* 辅助线系统 - 颜色已同步圣金色调 */
+.yanj-deco-line {
+   position: absolute;
+   background: var(--yj-line-color);
+   pointer-events: none;
+   z-index: 1;
+}
+.yanj-line-1 { height: 1px; width: 150%; top: 38%; left: -20%; transform: rotate(-8deg); animation: yjDrawH 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.yanj-line-2 { width: 1px; height: 150%; left: 35%; top: -25%; transform: rotate(12deg); animation: yjDrawV 3s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards; }
+.yanj-line-3 { height: 1px; width: 120%; top: 62%; left: -10%; background: rgba(253, 224, 71, 0.15); animation: yjDrawH 2s ease-out 0.5s forwards; }
+.yanj-line-4 { width: 1px; height: 100%; right: 25%; top: 0; background: rgba(253, 224, 71, 0.15); animation: yjDrawV 2.2s ease-out 0.3s forwards; }
+ 
+@keyframes yjDrawH { 0% { transform: scaleX(0) rotate(inherit); } 100% { transform: scaleX(1) rotate(inherit); } }
+@keyframes yjDrawV { 0% { transform: scaleY(0) rotate(inherit); } 100% { transform: scaleY(1) rotate(inherit); } }
+ 
+.yanj-cross { position: absolute; width: 12px; height: 12px; opacity: 0; z-index: 1; animation: yjFadeIn 1.5s 1s forwards; }
+.yanj-cross::before { content: ''; position: absolute; width: 100%; height: 1px; background: var(--yj-cross-color); top: 50%; left: 0; }
+.yanj-cross::after { content: ''; position: absolute; width: 1px; height: 100%; background: var(--yj-cross-color); left: 50%; top: 0; }
+.yanj-c1 { top: 25%; left: 15%; }
+.yanj-c2 { bottom: 25%; right: 15%; }
+ 
+/* 核心切割文字 */
+.yanj-cut-wrapper {
+   position: relative;
+   font-size: 50px; 
+   font-weight: 900;
+   color: transparent;
+   margin-bottom: 24px;
+   z-index: 10;
+   line-height: 1;
+   letter-spacing: 12px;
+}
+ 
+.yanj-cut-top, .yanj-cut-bottom {
+   position: absolute;
+   top: 0;
+   left: 0;
+   white-space: nowrap;
+   overflow: hidden;
+}
+ 
+.yanj-cut-top {
+   color: var(--yj-main-color);
+   clip-path: polygon(0 0, 100% 0, 100% 45%, 0 35%);
+   transform: translate(-4px, -3px);
+   text-shadow: 2px 4px 15px rgba(253, 224, 71, 0.3);
+   animation: yjFloatTop 4s ease-in-out infinite alternate;
+}
+ 
+.yanj-cut-bottom {
+   color: var(--yj-sub-color);
+   clip-path: polygon(0 35%, 100% 45%, 100% 100%, 0 100%);
+   transform: translate(4px, 3px);
+   text-shadow: -2px -4px 15px rgba(212, 175, 55, 0.3);
+   animation: yjFloatBottom 4s ease-in-out infinite alternate;
+}
+ 
+@keyframes yjFloatTop {
+   0% { transform: translate(-4px, -3px); }
+   100% { transform: translate(-5px, -5px); }
+}
+@keyframes yjFloatBottom {
+   0% { transform: translate(4px, 3px); }
+   100% { transform: translate(5px, 5px); }
+}
+ 
+/* 副标题 */
+.yanj-subtitle-container {
+   position: relative;
+   z-index: 10;
+   text-align: center;
+   margin-left: 8px;
+}
+ 
+.yanj-subtitle-char {
+   font-size: 14px;
+   font-weight: 300;
+   color: var(--yj-subtitle-color);
+   letter-spacing: 8px;
+   text-transform: uppercase;
+   text-shadow: 0 2px 6px rgba(212, 175, 55, 0.4);
+   display: inline-block;
+   opacity: 0;
+   filter: blur(8px);
+   transform: translateY(4px) scale(1.05);
+}
+ 
+/* 🤍 纯白花瓣碎片效果 */
+.yanj-petal {
+   position: absolute;
+   background: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0.4) 100%);
+   border-radius: 15px 0 15px 0; 
+   opacity: 0;
+   z-index: 5;
+   pointer-events: none;
+   box-shadow: 0 0 8px rgba(255,255,255,0.7); /* 增强圣光边缘 */
+}
+
+@keyframes yjFallAndSway {
+   0% { 
+       top: -10%; 
+       opacity: 0; 
+       transform: rotate(0deg) translateX(0px) scale(0.8); 
+   }
+   15% { opacity: 0.85; }
+   85% { opacity: 0.6; }
+   100% { 
+       top: 110%; 
+       opacity: 0; 
+       transform: rotate(360deg) translateX(60px) scale(1); 
+   }
+}
+
+@keyframes yjBlurTextFade {
+   0% { opacity: 0; filter: blur(8px); transform: translateY(4px) scale(1.05); }
+   100% { opacity: 1; filter: blur(0); transform: translateY(0) scale(1); }
+}
+@keyframes yjFadeIn { to { opacity: 1; } }
+</style>
+ 
+<div class="yanj-rib-container" id="yanj-cut-viewport"></div>
+ 
+<script>
+/* ========== YANJ: Dynamic Typography & Petal Generator ========== */
+(function(){
+   const container = document.getElementById('yanj-cut-viewport');
+   container.innerHTML = '';
+ 
+   // 1. 生成辅助线与准星
+   const lines = ['yanj-line-1', 'yanj-line-2', 'yanj-line-3', 'yanj-line-4'];
+   lines.forEach(function(cls) {
+       const l = document.createElement('div');
+       l.className = 'yanj-deco-line ' + cls;
+       container.appendChild(l);
+   });
+ 
+   ['yanj-c1', 'yanj-c2'].forEach(function(cls) {
+       const cross = document.createElement('div');
+       cross.className = 'yanj-cross ' + cls;
+       container.appendChild(cross);
+   });
+ 
+   // 2. 生成切割文字
+   const cutWrapper = document.createElement('div');
+   cutWrapper.className = 'yanj-cut-wrapper';
+   
+   const textData = '命運';
+   cutWrapper.textContent = textData;
+ 
+   const textTop = document.createElement('div');
+   textTop.className = 'yanj-cut-top';
+   textTop.textContent = textData;
+ 
+   const textBottom = document.createElement('div');
+   textBottom.className = 'yanj-cut-bottom';
+   textBottom.textContent = textData;
+ 
+   cutWrapper.appendChild(textTop);
+   cutWrapper.appendChild(textBottom);
+   container.appendChild(cutWrapper);
+
+   // 3. 生成模糊渐现副标题
+   const subContainer = document.createElement('div');
+   subContainer.className = 'yanj-subtitle-container';
+   const subText = '此生无论生与死 都愿与你相随';
+   
+   Array.from(subText).forEach(function(char, index) {
+       const span = document.createElement('span');
+       span.textContent = char;
+       span.className = 'yanj-subtitle-char';
+       
+       if (char === ' ') {
+         span.style.width = '12px';
+       } else {
+         const delay = 0.8 + (index * 0.12);
+         span.style.animation = 'yjBlurTextFade 1.2s ease-out ' + delay + 's forwards';
+       }
+       subContainer.appendChild(span);
+   });
+   container.appendChild(subContainer);
+
+   // 🤍 4. 小猫特制：无限纯白落花发生器
+   const petalCount = 20; 
+   for(let i = 0; i < petalCount; i++) {
+       const petal = document.createElement('div');
+       petal.className = 'yanj-petal';
+       
+       const size = Math.random() * 6 + 6;
+       petal.style.width = size + 'px';
+       petal.style.height = size + 'px';
+       
+       petal.style.left = (Math.random() * 100) + '%';
+       
+       const duration = Math.random() * 4 + 4;
+       const delay = Math.random() * 6;
+       
+       petal.style.animation = 'yjFallAndSway ' + duration + 's linear ' + delay + 's infinite';
+       
+       container.appendChild(petal);
+   }
+})();
+</script>
+</body>
+</html>
+```
+
+```html
+<!-- Phase 1: 载荷封装 -->
+<template id="censy-music-orb">
+    <meta name="referrer" content="no-referrer">
+    <style>
+        /* design by censy / modified by 将小猫 */
+        #cen_global_music_wrap {
+            position: fixed;
+            z-index: 2147483647;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+
+        #cen_global_music_wrap * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        /* 悬浮球体 */
+        #cen_music_orb {
+            position: absolute;
+            top: 20%;
+            right: 15px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+            pointer-events: auto;
+            cursor: grab;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.2s;
+            z-index: 10;
+        }
+        #cen_music_orb:active {
+            cursor: grabbing;
+            transform: scale(0.95);
+        }
+        .cen_orb_icon {
+            width: 24px;
+            height: 24px;
+            fill: #fff;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+            animation: cenOrbPulse 2s infinite;
+        }
+        @keyframes cenOrbPulse {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        /* 播放器面板 */
+        #cen_glass_player_panel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            width: 90%;
+            max-width: 360px;
+            height: 290px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            z-index: 5;
+        }
+        #cen_glass_player_panel.cen_panel_show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* 关闭按钮 */
+        #cen_panel_close {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        #cen_panel_close:hover {
+            opacity: 1;
+        }
+        #cen_panel_close svg {
+            width: 14px;
+            height: 14px;
+            fill: #555;
+        }
+
+        /* 顶部区 */
+        .cen_p_avatars {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 12px;
+            position: relative;
+            padding: 0 8px;
+        }
+        .cen_p_avatar_box {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            background: rgba(200, 200, 200, 0.3);
+            overflow: visible;
+            position: relative;
+            z-index: 5;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+        .cen_p_avatar_box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        /* 头像交互气泡 */
+        .cen_avatar_talk_bubble {
+            position: absolute;
+            bottom: 65px;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: rgba(40, 40, 50, 0.85);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 20;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .cen_avatar_talk_bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 5px 5px 0 5px;
+            border-style: solid;
+            border-color: rgba(40, 40, 50, 0.85) transparent transparent transparent;
+        }
+        .cen_avatar_talk_bubble.cen_show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .cen_heartbeat_zone {
+            width: 100px;
+            height: 40px;
+            margin: 0 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .cen_beat_svg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+        .cen_beat_line {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.85);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 200;
+            stroke-dashoffset: 200;
+            filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.5));
+            animation: cenLineFlow 1.8s linear infinite;
+        }
+        .cen_white_heart {
+            width: 18px;
+            height: 18px;
+            fill: #ffffff;
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.9));
+            z-index: 2;
+            animation: cenHeartPulse 1s ease-in-out infinite;
+        }
+        .cen_state_paused .cen_beat_line,
+        .cen_state_paused .cen_white_heart {
+            animation-play-state: paused;
+            opacity: 0.4;
+            filter: none;
+        }
+        @keyframes cenLineFlow {
+            0% {
+                stroke-dashoffset: 200;
+            }
+            100% {
+                stroke-dashoffset: 0;
+            }
+        }
+        @keyframes cenHeartPulse {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.15);
+            }
+        }
+
+        /* 气泡文字 */
+        .cen_p_bubble {
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 14px;
+            padding: 8px 14px;
+            text-align: center;
+            font-size: 13px;
+            color: #4a4a4a;
+            font-weight: 500;
+            margin: 0 auto 10px;
+            max-width: 85%;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        .cen_p_bubble::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 0 6px 6px 6px;
+            border-style: solid;
+            border-color: transparent transparent rgba(255, 255, 255, 0.85) transparent;
+        }
+
+        /* 列表与进度条 */
+        .cen_p_tracklist {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 8px;
+            padding-right: 4px;
+        }
+        .cen_p_tracklist::-webkit-scrollbar {
+            width: 4px;
+        }
+        .cen_p_tracklist::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 2px;
+        }
+        .cen_p_track_item {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            color: #555;
+            cursor: pointer;
+            margin-bottom: 4px;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .cen_p_track_item:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+        .cen_p_track_item.active {
+            background: rgba(255, 255, 255, 0.7);
+            color: #000;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        .cen_p_track_idx {
+            width: 20px;
+            text-align: center;
+            opacity: 0.6;
+            font-size: 10px;
+            margin-right: 6px;
+        }
+
+        .cen_p_progress_wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            padding: 0 4px;
+        }
+        .cen_time_txt {
+            font-size: 10px;
+            color: #666;
+            width: 32px;
+            text-align: center;
+            opacity: 0.8;
+        }
+        .cen_progress_touch {
+            flex: 1;
+            height: 16px;
+            margin: 0 8px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+        }
+        .cen_progress_bg {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+        .cen_progress_fill {
+            height: 100%;
+            background: #ffffff;
+            width: 0%;
+            border-radius: 2px;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+            pointer-events: none;
+        }
+
+        /* 控件 */
+        .cen_p_controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 4px;
+        }
+        .cen_p_btn {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        .cen_p_btn:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+        .cen_p_btn svg {
+            width: 20px;
+            height: 20px;
+            fill: #666;
+            transition: fill 0.2s;
+        }
+        .cen_p_btn_play {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.6);
+        }
+        .cen_p_btn_play:hover {
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .cen_p_btn_play svg {
+            width: 24px;
+            height: 24px;
+            fill: #333;
+        }
+        .cen_p_btn_like.liked svg {
+            fill: #ff4d4f;
+        }
+        .cen_p_btn_like.liked {
+            animation: cenBtnHeartBeat 0.3s ease-in-out;
+        }
+    </style>
+
+    <div id="cen_global_music_wrap">
+        <div id="cen_music_orb">
+            <svg viewBox="0 0 24 24" class="cen_orb_icon"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+        </div>
+
+        <div id="cen_glass_player_panel">
+            <div id="cen_panel_close">
+                <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </div>
+
+            <div class="cen_p_avatars">
+                <!-- 左侧头像 -->
+                <div class="cen_p_avatar_box" id="cen_avatar_left"><img src="https://s3.bmp.ovh/2026/09/01/xbJxAJRI.jpg"></div>
+                <div class="cen_heartbeat_zone cen_state_paused" id="cen_pulse_core_g">
+                    <svg viewBox="0 0 100 40" class="cen_beat_svg" preserveAspectRatio="none"><path d="M0,20 L25,20 L32,5 L40,35 L48,-5 L55,20 L100,20" class="cen_beat_line"></path></svg>
+                    <svg viewBox="0 0 24 24" class="cen_white_heart"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                </div>
+                <!-- 右侧头像 -->
+                <div class="cen_p_avatar_box" id="cen_avatar_right"><img src="https://s3.bmp.ovh/2026/09/01/9OFZW7g9.jpg"></div>
+            </div>
+
+            <div class="cen_p_bubble" id="cen_bubble_text_g">加载中...</div>
+            <div class="cen_p_tracklist" id="cen_list_container_g"></div>
+
+            <div class="cen_p_progress_wrap">
+                <span class="cen_time_txt" id="cen_time_current_g">00:00</span>
+                <div class="cen_progress_touch" id="cen_progress_track_g"><div class="cen_progress_bg"><div class="cen_progress_fill" id="cen_progress_fill_g"></div></div></div>
+                <span class="cen_time_txt" id="cen_time_total_g">00:00</span>
+            </div>
+
+            <div class="cen_p_controls">
+                <div class="cen_p_btn" id="cen_btn_mode_g"><svg viewBox="0 0 24 24" id="svg_mode_g"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg></div>
+                <div class="cen_p_btn" id="cen_btn_prev_g"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></div>
+                <div class="cen_p_btn cen_p_btn_play" id="cen_btn_play_g"><svg viewBox="0 0 24 24" id="svg_play_g"><path d="M8 5v14l11-7z"/></svg></div>
+                <div class="cen_p_btn" id="cen_btn_next_g"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></div>
+                <div class="cen_p_btn cen_p_btn_like" id="cen_btn_like_g"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div>
+            </div>
+            <div id="DESIGN_BY_CENSY_MARK_GLOBAL" style="display:none;">design by censy</div>
+            <audio id="cen_global_audio"></audio>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const orb = document.getElementById('cen_music_orb');
+            const panel = document.getElementById('cen_glass_player_panel');
+            const closeBtn = document.getElementById('cen_panel_close');
+
+            let isDragging = false,
+                moved = false;
+            let startX, startY, initLeft, initTop;
+
+            const pointerDown = (e) => {
+                isDragging = true;
+                moved = false;
+                let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                startX = clientX;
+                startY = clientY;
+                initLeft = orb.offsetLeft;
+                initTop = orb.offsetTop;
+                orb.style.transition = 'none';
+            };
+
+            const pointerMove = (e) => {
+                if (!isDragging) return;
+                let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                let dx = clientX - startX;
+                let dy = clientY - startY;
+                if (Math.abs(dx) > 5 || Math.abs(dy) > 5) moved = true;
+
+                let nx = initLeft + dx;
+                let ny = initTop + dy;
+                const maxX = window.innerWidth - orb.offsetWidth;
+                const maxY = window.innerHeight - orb.offsetHeight;
+                nx = Math.max(0, Math.min(nx, maxX));
+                ny = Math.max(0, Math.min(ny, maxY));
+
+                orb.style.left = nx + 'px';
+                orb.style.top = ny + 'px';
+                orb.style.right = 'auto';
+            };
+
+            const pointerUp = (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                orb.style.transition = 'transform 0.2s';
+                if (!moved) {
+                    panel.classList.add('cen_panel_show');
+                    orb.style.opacity = '0';
+                    orb.style.pointerEvents = 'none';
+                }
+            };
+
+            orb.addEventListener('mousedown', pointerDown);
+            window.addEventListener('mousemove', pointerMove);
+            window.addEventListener('mouseup', pointerUp);
+            orb.addEventListener('touchstart', pointerDown, { passive: false });
+            window.addEventListener('touchmove', pointerMove, { passive: false });
+            window.addEventListener('touchend', pointerUp);
+
+            closeBtn.onclick = () => {
+                panel.classList.remove('cen_panel_show');
+                orb.style.opacity = '1';
+                orb.style.pointerEvents = 'auto';
+            };
+
+            // --- 头像交互逻辑 ---
+            const talkLeft = ["发如月光的你，来牵走我的心吧。", "亲密值₊₅+5⁺⁵", "发如月光的你，告诉我你心底的话吧。"];
+            const talkRight = ["好感₊₁+1⁺¹", "不许拍啦", "戳我干嘛..."];
+
+            const bindTalk = (id, texts) => {
+                const box = document.getElementById(id);
+                if (!box) return;
+                box.onclick = () => {
+                    let old = box.querySelector('.cen_avatar_talk_bubble');
+                    if (old) old.remove();
+
+                    let bubble = document.createElement('div');
+                    bubble.className = 'cen_avatar_talk_bubble';
+                    bubble.innerText = texts[Math.floor(Math.random() * texts.length)];
+                    box.appendChild(bubble);
+
+                    void bubble.offsetWidth;
+                    bubble.classList.add('cen_show');
+
+                    setTimeout(() => {
+                        bubble.classList.remove('cen_show');
+                        setTimeout(() => bubble.remove(), 300);
+                    }, 2000);
+                };
+            };
+            bindTalk('cen_avatar_left', talkLeft);
+            bindTalk('cen_avatar_right', talkRight);
+
+            // ---- ✦ 歌单 (Zulf 插入第三首) ✦ ----
+            const cold_tank = [
+                { title: "Sajna, Say Yes To The Dress", url: "http://music.163.com/song/media/outer/url?id=3395892364.mp3" },
+                { title: "Khileya", url: "http://music.163.com/song/media/outer/url?id=2137184215.mp3" },
+                { title: "Zulf", url: "http://music.163.com/song/media/outer/url?id=2685327558.mp3" },
+                { title: "Intezaar", url: "http://music.163.com/song/media/outer/url?id=2139072432.mp3" },
+                { title: "Không Sao Mà, Em Đây Rồi", url: "http://music.163.com/song/media/outer/url?id=1380398922.mp3" },
+                { title: "Wo Ladki", url: "http://music.163.com/song/media/outer/url?id=3347602800.mp3" },
+                { title: "Tự Tâm", url: "http://music.163.com/song/media/outer/url?id=1406599690.mp3" },
+                { title: "Akhiyaan Gulaab", url: "http://music.163.com/song/media/outer/url?id=2156835222.mp3" }
+            ];
+
+            // --- 随机气泡文案配置 ---
+            const Z_CONFIG = ["我寻遍了这世间，再没遇见过如你一般的人。", "曾是漂泊的灵魂，不知不觉间，已与你紧紧相认。", "只要你点头说句“我愿意”，我亲爱的。", "我愿在你面前倾注所有真心，我亲爱的。", "来吧，是啊，此生无论生死都愿与你相随。"];
+
+            const audio = document.getElementById('cen_global_audio');
+            const DOM = {
+                list: document.getElementById('cen_list_container_g'),
+                bubble: document.getElementById('cen_bubble_text_g'),
+                playBtn: document.getElementById('cen_btn_play_g'),
+                svgPlay: document.getElementById('svg_play_g'),
+                prevBtn: document.getElementById('cen_btn_prev_g'),
+                nextBtn: document.getElementById('cen_btn_next_g'),
+                modeBtn: document.getElementById('cen_btn_mode_g'),
+                svgMode: document.getElementById('svg_mode_g'),
+                likeBtn: document.getElementById('cen_btn_like_g'),
+                pulseCore: document.getElementById('cen_pulse_core_g'),
+                progTrack: document.getElementById('cen_progress_track_g'),
+                progFill: document.getElementById('cen_progress_fill_g'),
+                timeCur: document.getElementById('cen_time_current_g'),
+                timeTot: document.getElementById('cen_time_total_g')
+            };
+
+            let cen_PLAY_STATE = false,
+                ALPHA_index_x = 0,
+                beta_dom_L = 0,
+                G_heart_LUV = false;
+
+            const fmtTime = (s) => {
+                if (isNaN(s)) return "00:00";
+                const m = Math.floor(s / 60),
+                    sec = Math.floor(s % 60);
+                return (m < 10 ? "0" + m : m) + ":" + (sec < 10 ? "0" + sec : sec);
+            };
+
+            const renderList = () => {
+                DOM.list.innerHTML = '';
+                cold_tank.forEach((t, i) => {
+                    let div = document.createElement('div');
+                    div.className = 'cen_p_track_item';
+                    div.innerHTML =
+                        `<div class="cen_p_track_idx">${String(i + 1).padStart(2, '0')}</div><div style="flex:1;">${t.title}</div>`;
+                    div.onclick = () => { ALPHA_index_x = i;
+                        loadTrack(i, true); };
+                    DOM.list.appendChild(div);
+                });
+            };
+            const updateHighlight = () => {
+                const items = DOM.list.children;
+                for (let i = 0; i < items.length; i++) {
+                    if (i === ALPHA_index_x) { items[i].classList.add('active');
+                        items[i].scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } else items[i].classList
+                        .remove('active');
+                }
+            };
+
+            const loadTrack = (idx, autoPlay) => {
+                audio.src = cold_tank[idx].url;
+                DOM.progFill.style.width = '0%';
+                DOM.timeCur.innerText = "00:00";
+                DOM.timeTot.innerText = "00:00";
+                DOM.bubble.innerText = Z_CONFIG[Math.floor(Math.random() * Z_CONFIG.length)];
+                updateHighlight();
+                G_heart_LUV = false;
+                DOM.likeBtn.classList.remove('liked');
+                if (autoPlay) {
+                    audio.play().then(() => { cen_PLAY_STATE = true;
+                        updateState(); }).catch(e => {});
+                } else { cen_PLAY_STATE = false;
+                    updateState(); }
+            };
+
+            const updateState = () => {
+                if (cen_PLAY_STATE) { DOM.svgPlay.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+                    DOM.pulseCore.classList.remove('cen_state_paused'); } else { DOM.svgPlay.innerHTML =
+                        '<path d="M8 5v14l11-7z"/>';
+                    DOM.pulseCore.classList.add('cen_state_paused'); }
+            };
+
+            DOM.playBtn.onclick = () => {
+                if (cen_PLAY_STATE) { audio.pause();
+                    cen_PLAY_STATE = false; } else { audio.play().catch(() => {});
+                    cen_PLAY_STATE = true; }
+                updateState();
+            };
+
+            const changeTrack = (dir) => {
+                if (beta_dom_L === 2) ALPHA_index_x = Math.floor(Math.random() * cold_tank.length);
+                else { ALPHA_index_x += dir;
+                    if (ALPHA_index_x < 0) ALPHA_index_x = cold_tank.length - 1;
+                    if (ALPHA_index_x >= cold_tank.length) ALPHA_index_x = 0; }
+                loadTrack(ALPHA_index_x, true);
+            };
+            DOM.prevBtn.onclick = () => changeTrack(-1);
+            DOM.nextBtn.onclick = () => changeTrack(1);
+
+            DOM.modeBtn.onclick = () => {
+                beta_dom_L = (beta_dom_L + 1) % 3;
+                if (beta_dom_L === 0) DOM.svgMode.innerHTML =
+                    '<path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>';
+                else if (beta_dom_L === 1) DOM.svgMode.innerHTML =
+                    '<path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2V9h-1l-2 1v1h1.5v4H13z"/>';
+                else DOM.svgMode.innerHTML =
+                    '<path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>';
+            };
+
+            DOM.likeBtn.onclick = () => { G_heart_LUV = !G_heart_LUV;
+                G_heart_LUV ? DOM.likeBtn.classList.add('liked') : DOM.likeBtn.classList.remove('liked'); };
+
+            audio.addEventListener('timeupdate', () => {
+                const cur = audio.currentTime,
+                    dur = audio.duration;
+                DOM.timeCur.innerText = fmtTime(cur);
+                if (dur > 0) DOM.progFill.style.width = (cur / dur * 100) + '%';
+            });
+            audio.addEventListener('loadedmetadata', () => DOM.timeTot.innerText = fmtTime(audio.duration));
+            audio.addEventListener('ended', () => { beta_dom_L === 1 ? (audio.currentTime = 0, audio.play()) :
+                    changeTrack(1); });
+
+            DOM.progTrack.onclick = (e) => {
+                const rect = DOM.progTrack.getBoundingClientRect();
+                const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                if (audio.duration > 0) { audio.currentTime = percent * audio.duration;
+                    DOM.progFill.style.width = (percent * 100) + '%'; }
+            };
+
+            renderList();
+            loadTrack(0, false);
+        })();
+    </script>
+</template>
+
+<!-- Phase 2-5: 核心激进越狱注入与热启动 (小猫修改版) -->
+<script>
+    (function() {
+        // 默认使用当前的沙盒页面
+        let pDoc = document;
+
+        try {
+            // 如果能拿到父页面（真实环境），就越狱到父页面
+            if (window.parent && window.parent.document) {
+                pDoc = window.parent.document;
+            }
+        } catch (e) {
+            console.warn("小猫提示：沙盒限制啦，我们就留在当前页面乖乖运行喵~", e);
+        }
+
+        const targetId = 'cen_global_music_wrap';
+        const oldWrap = pDoc.getElementById(targetId);
+        if (oldWrap) oldWrap.remove();
+
+        const tpl = document.getElementById('censy-music-orb');
+        if (!tpl) return;
+
+        const htmlStr = tpl.innerHTML;
+
+        // 这里也要用 pDoc 或者当前 document 的 createRange
+        const frag = document.createRange().createContextualFragment(htmlStr);
+        pDoc.body.appendChild(frag);
+
+        try {
+            localStorage.setItem('details.censy-music-orb', htmlStr);
+        } catch (err) {}
+    })();
+</script>

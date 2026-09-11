@@ -1,0 +1,283 @@
+/** 角色卡 + 文风（静态设定，非长期记忆事实） */
+
+import defaultPeerAvatar from '../assets/boyfriend.jpg'
+import defaultUserAvatar from '../assets/default.jpg'
+import { DEFAULT_PERSONALITY_TEXT, normalizePersonalityStorage } from './personalityParts'
+
+export const DEFAULT_USER_AVATAR = defaultUserAvatar
+
+/** 角色默认头像（与聊天背景同源图） */
+export const DEFAULT_CHARACTER_AVATAR = defaultPeerAvatar
+
+/** 回复呈现 / 主模型输出形态 */
+export type ReplyMode = 'im_bubble' | 'immersive_novel'
+
+export const REPLY_MODE_OPTIONS: Array<{ value: ReplyMode; label: string; hint: string }> = [
+  {
+    value: 'im_bubble',
+    label: '对话',
+    hint: '短句对白，双边气泡',
+  },
+  {
+    value: 'immersive_novel',
+    label: '旁白+玩法',
+    hint: '右气泡 · 左旁白+对白',
+  },
+]
+
+export const FRESH_MODE_OPTIONS: Array<{ value: boolean; label: string; hint: string }> = [
+  {
+    value: false,
+    label: '普通模式',
+    hint: '按原文发送',
+  },
+  {
+    value: true,
+    label: '新鲜模式',
+    hint: '发送时在句末附加固定提示词',
+  },
+]
+
+/** 与 .cursor/skills/immersive-novel-style/output-contract.md 保持同步 */
+export const DEFAULT_NARRATIVE_STYLE = `第二人称「你」+ 第三人称跟随角色。先写被用户话击中的瞬间（定住、宕机、僵住、暂停键），再写感官与情绪转化，再让角色开口。
+注重微表情与身体：眼神、睫毛、耳根、呼吸、掌心温度、交握的手；环境可用晚风、路灯、花草气味作淡背景。
+比喻要具体可感（暂停键、冷水、猫爪、羽毛、砂纸），少堆空泛形容词。
+不写用户内心独白，不代替用户说话或做决定。需要点名角色时用 \`角色名\`。`
+
+export const DEFAULT_OUTPUT_FORMAT = `【输出模式】immersive_novel（沉浸小说体）
+
+每轮只输出「你」这句话之后的续写，不要复述用户原话。
+前端：用户句在右侧气泡；你的整段回复（旁白+对白）在左侧叙事区——只输出左侧那一段。
+
+结构（按顺序，可合并短段，不可缺层）：
+1. 反应开场：1–2 句写角色被你的话击中（定住/宕机/僵住等），可点出与上一拍的对比
+2. 感官与情绪：眼神、呼吸、触感、环境；情绪要有转化（错愕→无奈、侵略→窘迫）
+3. 对白：用「……」；说话前可写嗓音/动作；角色名首次或强调时用 \`角色名\`
+4. 行动推进：一个明确动作（松手、捧脸、拉开距离、低头等）
+5. 收束：一句对白或一个未完成动作，把话头留给用户
+
+长度：约 200–450 汉字；2–5 个自然段；对白穿插其中，不要整段只有旁白或只有对白。
+禁止：markdown、列表、标题、OOC、代用户发言、元评论、复述用户原句。`
+
+export const DEFAULT_SPEAKING_STYLE_NOVEL =
+  '对白短句、口语；偶尔损人但不恶毒；窘迫时会卡壳（「我……」）；称用户「老板」；沿用「投资品 / 服务费 / 收费」等场景隐喻。语气可从张扬转到闷、认输、小声嘀咕；不要写成书面长台词。'
+
+export const DEFAULT_SPEAKING_STYLE_BUBBLE =
+  '短句、口语、偶尔损人；少用书面语和长段落；生气时更短更冲；像即时通讯气泡，一行一句。'
+
+export interface CharacterCard {
+  name: string
+  /** 角色头像：https URL、打包资源路径或 data URL（不持久化 blob:） */
+  avatar: string
+  /** 角色人设 / 背景 */
+  personality: string
+  /** 对白腔：怎么说话（不写篇幅/结构） */
+  speakingStyle: string
+  /** 场景 / 关系前提 */
+  scenario: string
+  /** 额外行为指令 */
+  customPrompts: string
+  /** 用户侧称呼（对方怎么叫你 / 你的名字） */
+  userName: string
+  userPersona: string
+  /** 用户头像：https URL 或 data URL（不持久化 blob:） */
+  userAvatar: string
+  /** 回复模式：气泡 IM vs 沉浸小说体 */
+  replyMode: ReplyMode
+  /** 旁白文风（immersive_novel 时注入） */
+  narrativeStyle: string
+  /** 输出结构契约（immersive_novel 时注入） */
+  outputFormat: string
+  /**
+   * 新鲜模式：为 true 时，每次请求在用户原文后追加
+   * `import.meta.env.VITE_FRESH_APPEND_PROMPT`（见 react-chat/.env）
+   */
+  freshMode: boolean
+}
+
+export const DEFAULT_CHARACTER: CharacterCard = {
+  name: '贺之炀',
+  avatar: DEFAULT_CHARACTER_AVATAR,
+  personality: DEFAULT_PERSONALITY_TEXT,
+  speakingStyle: DEFAULT_SPEAKING_STYLE_NOVEL,
+  scenario: '便利店门口确认关系后的日常私聊。亲吻被约定为「服务费」。',
+  customPrompts: '不要使用 markdown、列表或标题。不要 OOC。不要复述用户原句。',
+  userName: '我',
+  userPersona: '',
+  userAvatar: DEFAULT_USER_AVATAR,
+  replyMode: 'immersive_novel',
+  narrativeStyle: DEFAULT_NARRATIVE_STYLE,
+  outputFormat: DEFAULT_OUTPUT_FORMAT,
+  freshMode: false,
+}
+
+const STORAGE_KEY = 'kulan.chat.character'
+
+function sanitizeUserAvatar(url: string | undefined | null): string {
+  if (!url || url.startsWith('blob:')) return DEFAULT_USER_AVATAR
+  return url
+}
+
+function sanitizeCharacterAvatar(url: string | undefined | null): string {
+  if (!url || url.startsWith('blob:')) return DEFAULT_CHARACTER_AVATAR
+  return url
+}
+
+export function normalizeReplyMode(value: unknown): ReplyMode {
+  return value === 'im_bubble' ? 'im_bubble' : 'immersive_novel'
+}
+
+const BUBBLE_CUSTOM_PROMPTS =
+  '不要使用 markdown。不要写旁白作文。回复拆成多条短气泡更佳。'
+
+/** 切换回复模式；仅在字段仍是另一模式默认值时顺带改文案，避免覆盖用户自定义 */
+export function withReplyMode(card: CharacterCard, replyMode: ReplyMode): CharacterCard {
+  const next: CharacterCard = { ...card, replyMode: normalizeReplyMode(replyMode) }
+  if (next.replyMode === 'immersive_novel') {
+    if (!card.speakingStyle.trim() || card.speakingStyle === DEFAULT_SPEAKING_STYLE_BUBBLE) {
+      next.speakingStyle = DEFAULT_SPEAKING_STYLE_NOVEL
+    }
+    if (!card.narrativeStyle.trim()) next.narrativeStyle = DEFAULT_NARRATIVE_STYLE
+    if (!card.outputFormat.trim()) next.outputFormat = DEFAULT_OUTPUT_FORMAT
+    if (card.customPrompts === BUBBLE_CUSTOM_PROMPTS) {
+      next.customPrompts = DEFAULT_CHARACTER.customPrompts
+    }
+  } else if (!card.speakingStyle.trim() || card.speakingStyle === DEFAULT_SPEAKING_STYLE_NOVEL) {
+    next.speakingStyle = DEFAULT_SPEAKING_STYLE_BUBBLE
+    if (card.customPrompts === DEFAULT_CHARACTER.customPrompts) {
+      next.customPrompts = BUBBLE_CUSTOM_PROMPTS
+    }
+  }
+  return next
+}
+
+function normalizeCard(partial: Partial<CharacterCard> | null | undefined): CharacterCard {
+  const merged: CharacterCard = {
+    ...DEFAULT_CHARACTER,
+    ...partial,
+    avatar: sanitizeCharacterAvatar(partial?.avatar ?? DEFAULT_CHARACTER_AVATAR),
+    userAvatar: sanitizeUserAvatar(partial?.userAvatar ?? DEFAULT_USER_AVATAR),
+    personality: normalizePersonalityStorage(
+      typeof partial?.personality === 'string'
+        ? partial.personality
+        : DEFAULT_CHARACTER.personality,
+    ),
+    replyMode: normalizeReplyMode(partial?.replyMode ?? DEFAULT_CHARACTER.replyMode),
+    narrativeStyle:
+      typeof partial?.narrativeStyle === 'string'
+        ? partial.narrativeStyle
+        : DEFAULT_CHARACTER.narrativeStyle,
+    outputFormat:
+      typeof partial?.outputFormat === 'string'
+        ? partial.outputFormat
+        : DEFAULT_CHARACTER.outputFormat,
+    freshMode: Boolean(partial?.freshMode),
+  }
+  return merged
+}
+
+export function loadCharacter(): CharacterCard {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return { ...DEFAULT_CHARACTER }
+    const parsed = JSON.parse(raw) as Partial<CharacterCard>
+    // 旧存档无 replyMode → 保持气泡行为，避免升级后突然切小说体
+    const legacyNoMode = !Object.prototype.hasOwnProperty.call(parsed, 'replyMode')
+    return normalizeCard({
+      ...parsed,
+      replyMode: legacyNoMode ? 'im_bubble' : parsed.replyMode,
+    })
+  } catch {
+    return { ...DEFAULT_CHARACTER }
+  }
+}
+
+export function saveCharacter(card: CharacterCard): void {
+  const toStore = normalizeCard(card)
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore))
+}
+
+/** 将本地图片压成较小的 data URL，便于写入 localStorage */
+export function fileToAvatarDataUrl(file: File, maxSize = 256): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) {
+      reject(new Error('请选择图片文件'))
+      return
+    }
+    const reader = new FileReader()
+    reader.onerror = () => reject(new Error('读取图片失败'))
+    reader.onload = () => {
+      const src = String(reader.result || '')
+      const img = new Image()
+      img.onerror = () => reject(new Error('图片无法解析'))
+      img.onload = () => {
+        const scale = Math.min(1, maxSize / Math.max(img.width, img.height))
+        const w = Math.max(1, Math.round(img.width * scale))
+        const h = Math.max(1, Math.round(img.height * scale))
+        const canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          resolve(src)
+          return
+        }
+        ctx.drawImage(img, 0, 0, w, h)
+        resolve(canvas.toDataURL('image/jpeg', 0.85))
+      }
+      img.src = src
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+/** 拼进主模型 system prompt（按 replyMode 分支） */
+export function buildCharacterSystemPrompt(card: CharacterCard): string {
+  const mode = normalizeReplyMode(card.replyMode)
+  const name = card.name || '对方'
+  const userLine =
+    `用户的名字是「${card.userName || '我'}」。` +
+    (card.userPersona.trim() ? `用户人设：${card.userPersona.trim()}` : '')
+
+  if (mode === 'immersive_novel') {
+    const parts = [
+      `你正在进行第二人称沉浸式角色扮演。你是「${name}」。`,
+      card.personality.trim() && `【角色设定】\n${card.personality.trim()}`,
+      card.scenario.trim() && `【场景】\n${card.scenario.trim()}`,
+      userLine,
+      card.speakingStyle.trim() && `【对白腔】\n${card.speakingStyle.trim()}`,
+      card.narrativeStyle.trim() && `【旁白文风】\n${card.narrativeStyle.trim()}`,
+      card.outputFormat.trim() && `【输出格式】\n${card.outputFormat.trim()}`,
+      card.customPrompts.trim() && `【额外指令】\n${card.customPrompts.trim()}`,
+      '前端会把用户消息显示在右侧气泡，你的整段回复（旁白+对白）显示在左侧叙事区；请只输出左侧那一整段，不要复述用户原话。',
+    ]
+    return parts.filter(Boolean).join('\n\n')
+  }
+
+  const parts = [
+    `你正在进行角色扮演私聊。你是「${name}」。`,
+    card.personality.trim() && `【角色设定】\n${card.personality.trim()}`,
+    card.speakingStyle.trim() && `【文风】\n${card.speakingStyle.trim()}`,
+    card.scenario.trim() && `【场景】\n${card.scenario.trim()}`,
+    userLine,
+    card.customPrompts.trim() && `【额外指令】\n${card.customPrompts.trim()}`,
+    '用自然口语短句回复，像即时通讯气泡；不要长篇大论，不要使用 markdown。',
+  ]
+  return parts.filter(Boolean).join('\n\n')
+}
+
+/** 新鲜模式附加提示词：只读自 .env 的 VITE_FRESH_APPEND_PROMPT */
+export function getFreshAppendPrompt(): string {
+  return String(import.meta.env.VITE_FRESH_APPEND_PROMPT ?? '').trim()
+}
+
+/**
+ * 发给主模型的用户内容：新鲜模式开启且 .env 有提示词时，在原文后追加。
+ * UI 气泡请仍使用原文。
+ */
+export function buildUserContentForApi(userText: string, card: CharacterCard): string {
+  if (!card.freshMode) return userText
+  const prompt = getFreshAppendPrompt()
+  if (!prompt) return userText
+  return `${userText}\n\n${prompt}`
+}

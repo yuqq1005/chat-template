@@ -1,0 +1,425 @@
+# react-chat 现有数据结构说明
+
+> 项目路径：`e:\kulan\template\react-chat`  
+> 整理日期：2026-09-10  
+> 说明：以当前代码实现为准（非 freeapp 原文）
+
+---
+
+## 0. 存储总览
+
+| 介质 | 名称 / Key | 存什么 |
+|------|------------|--------|
+| **IndexedDB** | `KulanChatDB` (v1) | 聊天消息、记忆事实、记忆事件 |
+| **LocalStorage** | `kulan.chat.character` | 角色卡 + 文风（含 `replyMode` / 旁白 / 输出契约） |
+| **LocalStorage** | `kulan.chat.memory` | 记忆表 Markdown + 上下文轮数 |
+| **LocalStorage** | `kulan.chat.config` | API / 模型配置 |
+| **LocalStorage** | `kulan.chat.bg` | 聊天背景设置 |
+
+当前单聊联系人 ID 常量：`DEFAULT_CONTACT_ID = "default"`。
+
+源码入口：
+
+| 文件 | 职责 |
+|------|------|
+| `src/utils/idb.ts` | IndexedDB 打开与通用读写 |
+| `src/utils/messageStore.ts` | 消息持久化 |
+| `src/utils/memoryDb.ts` | episodes / facts |
+| `src/utils/memoryStorage.ts` | 记忆设置（LSStorage）+ Fact 基础类型 |
+| `src/utils/memoryOps.ts` | 副模型 `<memory_ops>` / `<memory_diff>` |
+| `src/utils/characterStorage.ts` | 角色卡 |
+| `src/utils/configStorage.ts` | API 配置 |
+| `src/utils/bgSettings.ts` | 背景 |
+| `src/types.ts` | UI 消息类型 |
+
+---
+
+## 1. IndexedDB：`KulanChatDB`
+
+### 1.1 Object Stores
+
+| Store | keyPath | 索引 |
+|-------|---------|------|
+| `messages` | `id` | `contactId`, `createdAt` |
+| `memoryEpisodes` | `id` | `contactId`, `createdAt` |
+| `memoryFacts` | `id` | `contactId`, `status`, `subject`, `predicate`, `updatedAt` |
+| `meta` | `key` | — |
+
+### 1.2 `messages` → `StoredMessage`
+
+运行时 UI 类型 `UiMessage`，落库时扩展为 `StoredMessage`。
+
+```ts
+// src/types.ts
+type MessageRole = 'user' | 'assistant' | 'system'
+
+interface UiMessage {
+  id: string
+  role: MessageRole
+  content: string
+  pending?: boolean   // 流式中，不落库
+  error?: boolean
+}
+
+// src/utils/messageStore.ts
+interface StoredMessage extends UiMessage {
+  contactId: string   // 当前固定 "default"
+  createdAt: number
+}
+```
+
+**示例：**
+
+```json
+{
+  "id": "1725960000000-abc123",
+  "role": "user",
+  "content": "我住在朝阳，不吃香菜",
+  "contactId": "default",
+  "createdAt": 1725960000000
+}
+```
+
+**规则：**
+- `pending === true` 的气泡不写入
+- 保存时按 `contactId` 清空后整表重写该联系人消息
+
+### 1.3 `memoryEpisodes` → `MemoryEpisode`
+
+一轮副模型记忆更新对应一条 episode。
+
+```ts
+interface MemoryEpisode {
+  id: string
+  contactId: string
+  type: 'memory_update'
+  content: string          // 扁平化对话文本
+  source:
+    | 'secondary_model_memory_ops'
+    | 'secondary_model_memory_diff'
+    | 'manual'
+  createdAt: number
+  messageIds: string[]
+  metadata?: Record<string, unknown>
+}
+```
+
+**示例：**
+
+```json
+{
+  "id": "episode_1725960001000_x7k2ab",
+  "contactId": "default",
+  "type": "memory_update",
+  "content": "【最新对话记录】\n我：我住在朝阳，不吃香菜\n贺之炀：……\n",
+  "source": "secondary_model_memory_ops",
+  "createdAt": 1725960001000,
+  "messageIds": [],
+  "metadata": {
+    "memoryOps": { "...": "见下文 MemoryOps" },
+    "oldMemoryLength": 420
+  }
+}
+```
+
+### 1.4 `memoryFacts` → `IdbMemoryFact`
+
+在 `MemoryFact` 基础上增加 IndexedDB 字段。
+
+```ts
+interface MemoryFact {
+  id: string
+  subject: string
+  predicate: string
+  object: string
+  factText: string
+  status: 'active' | 'inactive'
+  confidence: number      // 0–1
+  importance: number      // 0–1
+  type?: string
+  timeScope?: string
+  createdAt: number
+  updatedAt: number
+}
+
+interface IdbMemoryFact extends MemoryFact {
+  contactId: string
+  sourceEpisodeId?: string
+  validFrom?: number
+  validTo?: number | null
+  metadata?: Record<string, unknown>
+}
+```
+
+**常用 `type`：**  
+`profile` | `current_state` | `past_event` | `future_plan` | `relationship` | `item` | `preference` | `emotional_core` | `other`
+
+**常用 `timeScope`：**  
+`current` | `long_term` | `past` | `future` | `temporary`
+
+**示例：**
+
+```json
+{
+  "id": "fact_1725960001200_p9qm",
+  "contactId": "default",
+  "subject": "小雨",
+  "predicate": "dislikes",
+  "object": "香菜",
+  "factText": "小雨不吃香菜",
+  "status": "active",
+  "confidence": 0.95,
+  "importance": 0.8,
+  "type": "preference",
+  "timeScope": "long_term",
+  "createdAt": 1725960001200,
+  "updatedAt": 1725960001200,
+  "sourceEpisodeId": "episode_1725960001000_x7k2ab",
+  "validFrom": 1725960001200,
+  "validTo": null,
+  "metadata": {
+    "type": "preference",
+    "timeScope": "long_term",
+    "source": "memory_ops",
+    "entities": []
+  }
+}
+```
+
+失效后：`status: "inactive"`，`validTo` 填时间戳；`metadata.invalidationReason` 可记原因。
+
+### 1.5 `meta`
+
+```ts
+{ key: string, value: unknown }
+```
+
+预留键值元数据，当前业务可为空。
+
+---
+
+## 2. LocalStorage
+
+### 2.1 角色卡 `kulan.chat.character` → `CharacterCard`
+
+静态设定（文风 + 角色卡），**不是**长期记忆事实。
+
+```ts
+type ReplyMode = 'im_bubble' | 'immersive_novel'
+
+interface CharacterCard {
+  name: string
+  personality: string      // 角色设定
+  speakingStyle: string    // 对白腔（怎么说话；不写篇幅/结构）
+  scenario: string         // 场景
+  customPrompts: string    // 额外指令
+  userName: string
+  userPersona: string
+  userAvatar: string       // https 或 data URL（不存 blob:）
+  replyMode: ReplyMode     // 对话 vs 旁白+玩法
+  narrativeStyle: string   // 旁白文风（仅 immersive_novel 注入）
+  outputFormat: string     // 输出结构契约（仅 immersive_novel 注入）
+  freshMode: boolean       // 新鲜模式开关（句末提示词来自 .env，不存卡内）
+}
+```
+
+**`replyMode`（输出文本）：**
+
+| 值 | UI 文案 | 主模型输出 |
+|----|---------|------------|
+| `im_bubble` | 对话 | 口语短句，双边气泡 |
+| `immersive_novel` | 旁白+玩法 | **右**用户气泡 · **左**无气泡叙事墙；引号对白高亮，旁白不加框 |
+
+**`freshMode`（普通 ⇔ 新鲜）+ `.env` 提示词：**
+
+| 项 | 说明 |
+|----|------|
+| `freshMode: false` | 普通：按气泡原文发给模型 |
+| `freshMode: true` | 新鲜：API 用户消息 = `原文 + "\n\n" + VITE_FRESH_APPEND_PROMPT`；提示词为空则不追加；**气泡仍只存/显原文** |
+| `react-chat/.env` | `VITE_FRESH_APPEND_PROMPT=` 开发者自填；**界面不提供编辑**；改后需重启 Vite |
+
+顶栏「模式」按钮打开面板可切换上述两套开关；**新鲜模式开启时该按钮呈纯黄色**。文风细则仍在「文风与角色」设置页。
+
+**示例（节选，默认贺之炀为旁白+玩法、普通模式）：**
+
+```json
+{
+  "name": "贺之炀",
+  "personality": "北航航空航天工程系大二……",
+  "speakingStyle": "对白短句、口语……称用户「老板」……",
+  "scenario": "便利店门口确认关系后的日常私聊……",
+  "customPrompts": "不要使用 markdown、列表或标题。不要 OOC。……",
+  "userName": "我",
+  "userPersona": "",
+  "userAvatar": "https://...",
+  "replyMode": "immersive_novel",
+  "narrativeStyle": "第二人称「你」+ 第三人称跟随角色。先写被用户话击中的瞬间……",
+  "outputFormat": "【输出模式】immersive_novel……",
+  "freshMode": false
+}
+```
+
+拼进主模型 system（`buildCharacterSystemPrompt`）：
+
+- 公共：角色设定 / 场景 / 用户侧 / 额外指令  
+- `im_bubble`：【文风】+ 短气泡尾句  
+- `immersive_novel`：【对白腔】【旁白文风】【输出格式】+「只输出左侧叙事整段」说明；**不再**拼「不要旁白 / 短气泡」
+
+用户消息拼装：`buildUserContentForApi(text, card)` 读取 `import.meta.env.VITE_FRESH_APPEND_PROMPT`（仅新鲜模式影响请求体，不影响落库 `messages`）。
+
+文风契约与样例见项目 skill：`.cursor/skills/immersive-novel-style/`（与 `DEFAULT_*` 常量同步）。
+
+旧 LocalStorage 缺新字段时，`loadCharacter` / `saveCharacter` 会用默认值补齐；**若存档完全没有 `replyMode` 字段，则视为旧版并回落 `im_bubble`**（全新安装仍默认 `immersive_novel`）。`replyMode` 非法字符串则规范化为 `immersive_novel`。`freshMode` 缺省为 `false`；旧存档里的 `freshPrompt` 字段忽略，改由 `.env` 提供。
+
+### 2.2 记忆设置 `kulan.chat.memory` → `MemorySettings`
+
+```ts
+interface MemorySettings {
+  contextMessageCount: number  // 上下文轮数，默认 30，范围约 4–200
+  memoryTable: string          // Markdown 记忆表
+  facts: MemoryFact[]          // 遗留字段；正式事实以 IndexedDB 为准
+}
+```
+
+**说明：**  
+迁移后 `facts` 以 `memoryFacts` store 为准；LocalStorage 里主要保留 `contextMessageCount` + `memoryTable`。副模型 `<memory_diff>` 会改写 `memoryTable`。
+
+**记忆表模板分区：** `# 角色设定` / `# 用户设定` / `# 背景设定`，以及 `### 【现在】` `【未来】` `【过去】` `【重要物品】`。
+
+### 2.3 API 配置 `kulan.chat.config` → `AppConfig`
+
+```ts
+type ProviderId =
+  | 'deepseek' | 'openai' | 'siliconflow'
+  | 'moonshot' | 'zhipu' | 'custom'
+
+interface ApiConfig {
+  providerId: ProviderId
+  baseUrl: string
+  apiKey: string
+  model: string
+  temperature: number
+  topP: number
+}
+```
+
+主模型聊天与副模型记忆整理共用同一套 API（副模型 temperature 更低，约 `0.1`）。
+
+### 2.4 背景 `kulan.chat.bg` → `BgSettings`
+
+```ts
+type BgSource = 'default' | 'custom'
+type BgAdjust = 'default' | 'immerse' | 'focus' | 'custom'
+
+interface BgSettings {
+  source: BgSource
+  adjust: BgAdjust
+  customUrl: string | null   // blob: 不持久化
+}
+```
+
+---
+
+## 3. 副模型交换结构（不直接落库的中间格式）
+
+聊完一轮后，`runSecondaryMemoryUpdate` 请求同 API，解析：
+
+### 3.1 `<memory_ops>` → `MemoryOps`
+
+```ts
+interface MemoryOps {
+  entities?: Array<{
+    name?: string
+    type?: string
+    aliases?: string[]
+    description?: string
+  }>
+  facts_to_add?: Array<{
+    subject?: string
+    predicate?: string
+    object?: string
+    factText?: string
+    type?: string
+    timeScope?: string
+    confidence?: number
+    importance?: number
+  }>
+  facts_to_invalidate?: Array<{
+    subject?: string
+    predicate?: string
+    reason?: string
+  }>
+}
+```
+
+流程：写 `memoryEpisode` → `applyMemoryOps` → 更新 `memoryFacts`。
+
+### 3.2 `<memory_diff>` 
+
+JSON 数组，打补丁到 Markdown 记忆表：
+
+```json
+[
+  { "op": "update", "section": "现在", "key": "地点", "value": "朝阳" },
+  { "op": "append", "section": "过去", "line": "| 小雨 | 告白不吃香菜 | 便利店 | 今晚 |" },
+  { "op": "delete", "section": "现在", "keyword": "未知" }
+]
+```
+
+---
+
+## 4. 数据流（简图）
+
+```
+用户发送
+  │
+  ├─ 从 IndexedDB 检索相关 memoryFacts → 注入 system
+  ├─ 用 CharacterCard 按 replyMode 拼 system
+  │     ├─ im_bubble（对话）→ 短气泡文风
+  │     └─ immersive_novel（旁白+玩法）→ 对白腔 + 旁白 + 输出契约
+  ├─ 按 contextMessageCount 截取最近 messages
+  ├─ 若 freshMode：本轮用户 API 内容 = buildUserContentForApi（气泡仍存原文）
+  ├─ 主模型流式回复 → 更新 UI → 持久化 messages（非 pending）
+  │     · immersive_novel：content 仍为整段字符串（左叙事块渲染待接）
+  │
+  └─ 副模型（后台）
+       ├─ <memory_ops> → episode + facts（IndexedDB）
+       └─ <memory_diff> → 更新 memoryTable（LocalStorage）
+```
+
+---
+
+## 5. Console 清理命令（可选）
+
+```js
+await new Promise((resolve, reject) => {
+  const req = indexedDB.deleteDatabase('KulanChatDB')
+  req.onsuccess = () => resolve(true)
+  req.onerror = () => reject(req.error)
+  req.onblocked = () => resolve('blocked')
+})
+Object.keys(localStorage)
+  .filter((k) => k.startsWith('kulan.chat.'))
+  .forEach((k) => localStorage.removeItem(k))
+```
+
+刷新页面后生效。
+
+---
+
+## 6. 与 freeapp 的对应关系
+
+| freeapp | 本项目 |
+|---------|--------|
+| `WhaleLLTDB` | `KulanChatDB` |
+| `contacts.messages` | store `messages` |
+| `memoryEpisodes` / `memoryFacts` | 同名 store |
+| `contact.personality` 等 | `CharacterCard`（LocalStorage） |
+| `contact.memoryTableContent` | `MemorySettings.memoryTable` |
+| 副模型 `memory_ops` / `memory_diff` | `memoryOps.ts` 同思路 |
+
+当前尚未实现：多联系人、世界书 `worldBook[]` 独立 store（可后续扩展）。
+
+---
+
+*文档随 `react-chat` 实现更新；以源码类型定义为准。*
