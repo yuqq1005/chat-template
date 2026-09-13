@@ -1,7 +1,9 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import {
   FRESH_MODE_OPTIONS,
+  MEMORY_ENGINE_OPTIONS,
   REPLY_MODE_OPTIONS,
+  SCENE_HEADER_OPTIONS,
   type CharacterCard,
   type ReplyMode,
 } from '../utils/characterStorage'
@@ -14,6 +16,8 @@ interface ModePanelProps {
   onClose: () => void
   onReplyModeChange: (mode: ReplyMode) => void
   onFreshModeChange: (enabled: boolean) => void
+  onMemoryEngineChange: (enabled: boolean) => void
+  onSceneHeaderChange: (enabled: boolean) => void
   onOpenOutputSettings: () => void
 }
 
@@ -24,6 +28,8 @@ export function ModePanel({
   onClose,
   onReplyModeChange,
   onFreshModeChange,
+  onMemoryEngineChange,
+  onSceneHeaderChange,
   onOpenOutputSettings,
 }: ModePanelProps) {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -119,6 +125,72 @@ export function ModePanel({
                     ? opt.value
                       ? 'border-amber-400/55 bg-amber-400/15 text-amber-50'
                       : 'border-[var(--accent-a)]/55 bg-[var(--accent-a)]/15 text-white'
+                    : 'border-white/10 bg-black/25 text-white/65 hover:bg-white/5',
+                ].join(' ')}
+              >
+                <span className="block text-[13px] font-medium">{opt.label}</span>
+                <span className="mt-0.5 block text-[10px] leading-snug text-white/40">
+                  {opt.hint}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      <div className="my-3 h-px bg-white/10" />
+
+      <section className="space-y-2">
+        <h2 className="px-0.5 text-[11px] font-medium tracking-wide text-white/45">
+          场景页眉
+        </h2>
+        <div className="grid grid-cols-2 gap-1.5">
+          {SCENE_HEADER_OPTIONS.map((opt) => {
+            const active = character.sceneHeader.enabled === opt.value
+            return (
+              <button
+                key={String(opt.value)}
+                type="button"
+                onClick={() => onSceneHeaderChange(opt.value)}
+                className={[
+                  'rounded-xl border px-2.5 py-2 text-left transition',
+                  active
+                    ? opt.value
+                      ? 'border-[var(--accent-a)]/55 bg-[var(--accent-a)]/15 text-white'
+                      : 'border-white/20 bg-white/8 text-white/80'
+                    : 'border-white/10 bg-black/25 text-white/65 hover:bg-white/5',
+                ].join(' ')}
+              >
+                <span className="block text-[13px] font-medium">{opt.label}</span>
+                <span className="mt-0.5 block text-[10px] leading-snug text-white/40">
+                  {opt.hint}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      <div className="my-3 h-px bg-white/10" />
+
+      <section className="space-y-2">
+        <h2 className="px-0.5 text-[11px] font-medium tracking-wide text-white/45">
+          后台记忆整理
+        </h2>
+        <div className="grid grid-cols-2 gap-1.5">
+          {MEMORY_ENGINE_OPTIONS.map((opt) => {
+            const active = character.memoryEngineEnabled === opt.value
+            return (
+              <button
+                key={String(opt.value)}
+                type="button"
+                onClick={() => onMemoryEngineChange(opt.value)}
+                className={[
+                  'rounded-xl border px-2.5 py-2 text-left transition',
+                  active
+                    ? opt.value
+                      ? 'border-[var(--accent-a)]/55 bg-[var(--accent-a)]/15 text-white'
+                      : 'border-white/20 bg-white/8 text-white/80'
                     : 'border-white/10 bg-black/25 text-white/65 hover:bg-white/5',
                 ].join(' ')}
               >

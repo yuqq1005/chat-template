@@ -8,7 +8,7 @@ export interface ChatCompletionResponse {
   model: string
   choices: Array<{
     index: number
-    message: ChatMessage
+    message: ChatMessage & { reasoning_content?: string }
     finish_reason: string
   }>
   usage?: {
@@ -20,11 +20,16 @@ export interface ChatCompletionResponse {
 
 export interface StreamChunk {
   id: string
-  choices: Array<{
+  choices?: Array<{
     index: number
     delta: { role?: string; content?: string; reasoning_content?: string }
     finish_reason?: string
   }>
+  error?: {
+    code?: string
+    message?: string
+    type?: string
+  }
 }
 
 export interface AiCallerOptions {
@@ -98,7 +103,9 @@ export class AiCaller {
 
     const data: ChatCompletionResponse = await response.json()
     if (!data.choices?.length) throw new Error('AI 返回空内容')
-    const content = data.choices[0].message.content || ''
+    const message = data.choices[0].message
+    // 部分网关忽略 thinking=disabled，正文进 reasoning_content
+    const content = (message.content || message.reasoning_content || '').trim()
     const finishReason = data.choices[0].finish_reason
     return { content, usage: data.usage, finishReason }
   }
@@ -142,16 +149,36 @@ export class AiCaller {
       const decoder = new TextDecoder()
       let buffer = ''
       let finishReason: string | undefined
+      let receivedAny = false
+      let streamFatal: Error | undefined
 
       const consumeLine = (line: string) => {
         const trimmed = line.trim()
         if (!trimmed || trimmed === 'data: [DONE]') return
         if (!trimmed.startsWith('data: ')) return
         try {
-          const chunk: StreamChunk = JSON.parse(trimmed.slice(6))
+          const chunk = JSON.parse(trimmed.slice(6)) as StreamChunk & {
+            error?: { code?: string; message?: string }
+          }
+          if (chunk.error) {
+            const code = chunk.error.code || 'stream_error'
+            const message = chunk.error.message || code
+            // 内容审查等会中途掐断：有正文时当作截断，留给上层续写
+            if (code === 'data_inspection_failed' || code === 'content_filter') {
+              finishReason = 'content_filter'
+              console.warn('[主模型流式] 输出被内容审查中断:', message)
+            } else {
+              streamFatal = new Error(`AI 流式中断: ${message}`)
+              finishReason = 'error'
+            }
+            return
+          }
           const choice = chunk.choices?.[0]
           const content = choice?.delta?.content
-          if (content) onChunk(content)
+          if (content) {
+            receivedAny = true
+            onChunk(content)
+          }
           if (choice?.finish_reason) finishReason = choice.finish_reason
         } catch {
           /* ignore malformed chunks */
@@ -166,6 +193,10 @@ export class AiCaller {
           if (buffer.trim()) {
             for (const line of buffer.split('\n')) consumeLine(line)
             buffer = ''
+          }
+          if (streamFatal && !receivedAny) {
+            onError?.(streamFatal)
+            throw streamFatal
           }
           try {
             await Promise.resolve(onComplete?.({ finishReason }))

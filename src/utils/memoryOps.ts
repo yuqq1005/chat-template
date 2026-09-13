@@ -84,16 +84,20 @@ export function buildMemoryUpdatePrompt(charName: string, userName: string): str
 - 优先保证 JSON 完整闭合；宁可少写，也不要截断。无新情报时用空数组并完整输出闭合标签。
 - \`<memory_ops>\` 之外不要输出任何解释或对话。
 
-【兼容旧版】\`<memory_ops>\` 闭合后再输出 \`<memory_diff>\`。无表格变更时只输出 \`<memory_diff>[]</memory_diff>\`，不要把长文塞进 diff。
+【兼容旧版】\`<memory_ops>\` 闭合后再输出 \`<memory_diff>\`。无变更时输出 \`<memory_diff>[]</memory_diff>\`。
 
-memory_diff 支持的操作示例：
+记忆表只维护：\`# 背景设定\`（列表 \`- 键：值\`）以及下方 \`### 【现在】/【未来】/【过去】/【重要物品】\` 表格。
+不要输出或编造「角色设定 / 用户设定」区块（角色与用户人设由角色卡提供，不在此表）。
+
+memory_diff 示例：
 [
-  {"op": "update", "section": "现在", "key": "地点", "value": "新地点"},
-  {"op": "append", "section": "过去", "line": "| 人物 | 事件 | 地点 | 时间 |"},
-  {"op": "delete", "section": "现在", "keyword": "旧地点"}
+  {"op": "update", "section": "背景设定", "key": "时间地点", "value": "初夏夜晚·便利店门口"},
+  {"op": "update", "section": "现在", "key": "地点", "value": "便利店门口路灯下"},
+  {"op": "append", "section": "过去", "line": "| 贺之炀 | 递薄荷糖 | 便利店 | 今晚 |"},
+  {"op": "delete", "section": "现在", "keyword": "未知"}
 ]
 
-输出顺序要求：先完整的 \`<memory_ops>\` 块，再 \`<memory_diff>\` 块；不要颠倒。`
+输出顺序：先完整 \`<memory_ops>\`，再 \`<memory_diff>\`。`
 }
 
 function stripJsonFence(raw: string): string {
@@ -408,6 +412,9 @@ export async function runSecondaryMemoryUpdate(options: {
   contactId?: string
 }): Promise<{ ok: boolean; message: string }> {
   const contactId = options.contactId ?? DEFAULT_CONTACT_ID
+  if (options.character.memoryEngineEnabled === false) {
+    return { ok: true, message: '已关闭后台记忆整理，跳过' }
+  }
   const cfg = getApiConfig()
   if (!cfg.apiKey || !cfg.baseUrl) {
     return { ok: false, message: '缺少 API 配置，跳过记忆更新' }

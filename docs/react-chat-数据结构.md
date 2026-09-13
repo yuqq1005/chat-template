@@ -28,6 +28,7 @@
 | `src/utils/memoryStorage.ts` | 记忆设置（LSStorage）+ Fact 基础类型 |
 | `src/utils/memoryOps.ts` | 副模型 `<memory_ops>` / `<memory_diff>` |
 | `src/utils/characterStorage.ts` | 角色卡 |
+| `src/utils/sceneMeta.ts` | 故事时间推进 + 页眉短调用 `<scene_meta>` |
 | `src/utils/configStorage.ts` | API 配置 |
 | `src/utils/bgSettings.ts` | 背景 |
 | `src/types.ts` | UI 消息类型 |
@@ -53,12 +54,22 @@
 // src/types.ts
 type MessageRole = 'user' | 'assistant' | 'system'
 
+interface MessageScene {
+  time: string          // ISO；客户端：近 5 年随机，每轮对话后 +1～5 分钟
+  location?: string
+  people?: string       // 现场人物（可选）
+  weather?: string      // 天气 / 环境氛围
+  godComment?: string   // 上帝视角评价，约 10–30 字，暧昧吐槽感
+}
+
 interface UiMessage {
   id: string
   role: MessageRole
   content: string
   pending?: boolean   // 流式中，不落库
   error?: boolean
+  /** 仅 assistant；展示在正文前，不进模型 history 的 content */
+  scene?: MessageScene
 }
 
 // src/utils/messageStore.ts
@@ -68,13 +79,22 @@ interface StoredMessage extends UiMessage {
 }
 ```
 
+**场景页眉：** 时间由客户端生成（近 5 年随机，每轮 +1～5 分钟）。地点 / 现场人物 / 天气 / 上帝视角评价由**另一次短调用**强制输出 `<scene_meta>` XML；与主剧情并行，**两者都完成后**再渲染（页眉在正文之上）。主剧情 system **不再**要求 `【页眉】` 行。开关见 `CharacterCard.sceneHeader`。`loadMessages` 须带回 `scene`。
+
 **示例：**
 
 ```json
 {
   "id": "1725960000000-abc123",
-  "role": "user",
-  "content": "我住在朝阳，不吃香菜",
+  "role": "assistant",
+  "content": "……旁白正文……",
+  "scene": {
+    "time": "2023-08-14T13:36:00.000Z",
+    "location": "便利店门口",
+    "people": "贺之炀、你",
+    "weather": "晚风微凉",
+    "godComment": "确认关系后的第一秒，空气比合同还紧。"
+  },
   "contactId": "default",
   "createdAt": 1725960000000
 }
@@ -212,6 +232,7 @@ interface CharacterCard {
   personality: string      // 角色设定
   speakingStyle: string    // 对白腔（怎么说话；不写篇幅/结构）
   scenario: string         // 场景
+  greeting: string         // 开场白预设；空会话注入首条助手消息（空则不注入）
   customPrompts: string    // 额外指令
   userName: string
   userPersona: string
@@ -220,6 +241,18 @@ interface CharacterCard {
   narrativeStyle: string   // 旁白文风（仅 immersive_novel 注入）
   outputFormat: string     // 输出结构契约（仅 immersive_novel 注入）
   freshMode: boolean       // 新鲜模式开关（句末提示词来自 .env，不存卡内）
+  memoryEngineEnabled: boolean
+  /** 助手正文前场景页眉：总开关 + 各字段显隐（设置 → 文风与角色 → 文风） */
+  sceneHeader: {
+    enabled: boolean
+    fields: {
+      time: boolean
+      location: boolean
+      people: boolean
+      weather: boolean
+      godComment: boolean
+    }
+  }
 }
 ```
 
@@ -228,7 +261,7 @@ interface CharacterCard {
 | 值 | UI 文案 | 主模型输出 |
 |----|---------|------------|
 | `im_bubble` | 对话 | 口语短句，双边气泡 |
-| `immersive_novel` | 旁白+玩法 | **右**用户气泡 · **左**无气泡叙事墙；引号对白高亮，旁白不加框 |
+| `immersive_novel` | 旁白+玩法 | **右**用户气泡 · **左**无气泡叙事墙；英文双引号 `""` 对白高亮，旁白不加框 |
 
 **`freshMode`（普通 ⇔ 新鲜）+ `.env` 提示词：**
 
@@ -269,7 +302,9 @@ interface CharacterCard {
 
 文风契约与样例见项目 skill：`.cursor/skills/immersive-novel-style/`（与 `DEFAULT_*` 常量同步）。
 
-旧 LocalStorage 缺新字段时，`loadCharacter` / `saveCharacter` 会用默认值补齐；**若存档完全没有 `replyMode` 字段，则视为旧版并回落 `im_bubble`**（全新安装仍默认 `immersive_novel`）。`replyMode` 非法字符串则规范化为 `immersive_novel`。`freshMode` 缺省为 `false`；旧存档里的 `freshPrompt` 字段忽略，改由 `.env` 提供。
+旧 LocalStorage 缺新字段时，`loadCharacter` / `saveCharacter` 会用默认值补齐；**若存档完全没有 `replyMode` 字段，则视为旧版并回落 `im_bubble`**（全新安装仍默认 `immersive_novel`）。`replyMode` 非法字符串则规范化为 `immersive_novel`。`freshMode` 缺省为 `false`；旧存档里的 `freshPrompt` 字段忽略，改由 `.env` 提供。缺 `greeting` 时补默认开场白；若用户显式存空串则空会话不注入。
+
+**开场白：** 消息列表为空且 `greeting` 非空时，`ChatPage` 注入一条 `role: 'assistant'` 消息（不调主模型）。已有历史消息时不覆盖。
 
 ### 2.2 记忆设置 `kulan.chat.memory` → `MemorySettings`
 
@@ -300,6 +335,7 @@ interface ApiConfig {
   model: string
   temperature: number
   topP: number
+  maxTokens: number   // 主剧情单次 max_tokens，默认 5000，可在「切换模型」改
 }
 ```
 

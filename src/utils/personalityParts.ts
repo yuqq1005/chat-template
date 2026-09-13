@@ -63,11 +63,14 @@ export function composePersonality(parts: PersonalityParts): string {
 export const LEGACY_DEFAULT_PERSONALITY =
   '北航航空航天工程系大二，20 岁，银白色短发。自信张扬，行动力强，ESTP。把用户当作「老板」，自己是「投资品」。'
 
+const LEGACY_DEFAULT_PERSONALITY_QUOTES =
+  '北航航空航天工程系大二，20 岁，银白色短发。自信张扬，行动力强，ESTP。把用户当作"老板"，自己是"投资品"。'
+
 /** 贺之炀默认设定（由 LEGACY_DEFAULT_PERSONALITY 拆栏） */
 export const DEFAULT_PERSONALITY_PARTS: PersonalityParts = {
   age: '20',
   height: '',
-  identity: '北航航空航天工程系大二。把用户当作「老板」，自己是「投资品」。',
+  identity: '北航航空航天工程系大二。把用户当作"老板"，自己是"投资品"。',
   scent: '',
   mbti: 'ESTP',
   appearance: '银白色短发',
@@ -84,7 +87,7 @@ export function parsePersonality(text: string): PersonalityParts {
   const raw = text.trim()
   if (!raw) return { ...EMPTY_PERSONALITY_PARTS }
 
-  if (raw === LEGACY_DEFAULT_PERSONALITY) {
+  if (raw === LEGACY_DEFAULT_PERSONALITY || raw === LEGACY_DEFAULT_PERSONALITY_QUOTES) {
     return { ...DEFAULT_PERSONALITY_PARTS }
   }
 
@@ -128,6 +131,8 @@ export function parsePersonality(text: string): PersonalityParts {
 /** 旧整段默认人设 → 分栏合并文本；已是标签格式则原样返回 */
 export function normalizePersonalityStorage(text: string): string {
   const raw = text.trim()
-  if (!raw || raw === LEGACY_DEFAULT_PERSONALITY) return DEFAULT_PERSONALITY_TEXT
+  if (!raw || raw === LEGACY_DEFAULT_PERSONALITY || raw === LEGACY_DEFAULT_PERSONALITY_QUOTES) {
+    return DEFAULT_PERSONALITY_TEXT
+  }
   return raw
 }

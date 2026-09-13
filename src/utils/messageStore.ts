@@ -23,11 +23,12 @@ export async function loadMessages(
   return rows
     .filter((m) => !m.pending)
     .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
-    .map(({ id, role, content, error }) => ({
+    .map(({ id, role, content, error, scene }) => ({
       id,
       role,
       content,
       ...(error ? { error: true } : {}),
+      ...(scene ? { scene } : {}),
     }))
 }
 

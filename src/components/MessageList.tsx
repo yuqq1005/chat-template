@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { UiMessage } from '../types'
-import type { ReplyMode } from '../utils/characterStorage'
+import type { ReplyMode, SceneHeaderSettings } from '../utils/characterStorage'
 import { ChatBubble } from './ChatBubble'
 
 interface MessageListProps {
@@ -10,6 +10,7 @@ interface MessageListProps {
   userName?: string
   userAvatar?: string
   replyMode?: ReplyMode
+  sceneHeader?: SceneHeaderSettings
   onUserAvatarClick?: () => void
   onPeerAvatarClick?: () => void
 }
@@ -21,6 +22,7 @@ export function MessageList({
   userName,
   userAvatar,
   replyMode,
+  sceneHeader,
   onUserAvatarClick,
   onPeerAvatarClick,
 }: MessageListProps) {
@@ -47,6 +49,7 @@ export function MessageList({
             userName={userName}
             userAvatar={userAvatar}
             replyMode={replyMode}
+            sceneHeader={sceneHeader}
             onUserAvatarClick={onUserAvatarClick}
             onPeerAvatarClick={onPeerAvatarClick}
           />

@@ -20,7 +20,7 @@ const ITEMS: {
   {
     id: 'character',
     title: '文风与角色',
-    desc: '角色卡、说话方式、场景',
+    desc: '角色卡、文风、场景页眉',
     icon: HiOutlineSparkles,
   },
   {

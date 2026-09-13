@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import boyfriendBg from '../assets/boyfriend.jpg'
-import { getProvider } from '../config/modelProviders'
 import type { AppConfig } from '../utils/configStorage'
 import { ConfigStorage, hasApiKey } from '../utils/configStorage'
 import { AiCaller, type ChatMessage } from '../utils/aiCaller'
@@ -11,10 +10,11 @@ import {
   type BgSettings,
 } from '../utils/bgSettings'
 import {
-  buildCharacterSystemPrompt,
+  buildCharacterSystemMessages,
   buildUserContentForApi,
   DEFAULT_CHARACTER_AVATAR,
   loadCharacter,
+  normalizeSceneHeader,
   saveCharacter,
   withReplyMode,
   type CharacterCard,
@@ -27,9 +27,19 @@ import {
   type MemorySettings,
 } from '../utils/memoryStorage'
 import { loadFactsForRetrieval, runSecondaryMemoryUpdate } from '../utils/memoryOps'
+import {
+  ASSISTANT_CONTINUE_PROMPT,
+  shouldContinueAssistant,
+} from '../utils/assistantCompleteness'
 import { migrateLegacyFactsIfNeeded } from '../utils/memoryDb'
 import { deleteKulanChatDatabase } from '../utils/idb'
 import { loadMessages, saveMessages } from '../utils/messageStore'
+import {
+  buildMessageScene,
+  createGreetingScene,
+  fetchSceneMeta,
+  nextStoryTimeFromMessages,
+} from '../utils/sceneMeta'
 import type { UiMessage } from '../types'
 import { ApiPanel } from './ApiPanel'
 import { BackgroundPicker } from './BackgroundPicker'
@@ -105,6 +115,25 @@ export function ChatPage() {
     void saveMessages(durable).catch((e) => console.warn('[消息] 保存失败:', e))
   }, [messages, messagesReady])
 
+  /** 空会话注入开场白预设（不调模型） */
+  useEffect(() => {
+    if (!messagesReady) return
+    if (messages.length > 0) return
+    const greeting = character.greeting?.trim()
+    if (!greeting) return
+    const scene = character.sceneHeader?.enabled
+      ? createGreetingScene(character.name)
+      : undefined
+    setMessages([
+      {
+        id: uid(),
+        role: 'assistant',
+        content: greeting,
+        ...(scene ? { scene } : {}),
+      },
+    ])
+  }, [messagesReady, messages.length, character.greeting, character.name, character.sceneHeader?.enabled])
+
   const handleSaved = useCallback((next: AppConfig) => {
     setConfig(next)
   }, [])
@@ -132,6 +161,28 @@ export function ChatPage() {
   const handleFreshModeChange = useCallback((enabled: boolean) => {
     setCharacter((prev) => {
       const next = { ...prev, freshMode: enabled }
+      saveCharacter(next)
+      return next
+    })
+  }, [])
+
+  const handleMemoryEngineChange = useCallback((enabled: boolean) => {
+    setCharacter((prev) => {
+      const next = { ...prev, memoryEngineEnabled: enabled }
+      saveCharacter(next)
+      return next
+    })
+  }, [])
+
+  const handleSceneHeaderChange = useCallback((enabled: boolean) => {
+    setCharacter((prev) => {
+      const next = {
+        ...prev,
+        sceneHeader: {
+          ...normalizeSceneHeader(prev.sceneHeader),
+          enabled,
+        },
+      }
       saveCharacter(next)
       return next
     })
@@ -168,9 +219,13 @@ export function ChatPage() {
     historyForMemory: Array<{ role: string; content: string }>,
     assistantReply: string,
   ) => {
+    const card = loadCharacter()
+    if (!card.memoryEngineEnabled) {
+      console.log('[副模型记忆]', '已关闭后台记忆整理，跳过')
+      return
+    }
     setMemoryBusy(true)
     try {
-      const card = loadCharacter()
       const result = await runSecondaryMemoryUpdate({
         character: card,
         conversationTail: historyForMemory.slice(-12),
@@ -193,6 +248,14 @@ export function ChatPage() {
 
     const userMsg: UiMessage = { id: uid(), role: 'user', content: text }
     const pendingId = uid()
+    const card = loadCharacter()
+    const sceneHeader = normalizeSceneHeader(card.sceneHeader)
+    const storyTime = nextStoryTimeFromMessages(messagesRef.current)
+    const prevScene = [...messagesRef.current]
+      .reverse()
+      .find((m) => m.role === 'assistant' && m.scene)?.scene
+
+    // 页眉 + 剧情都完成前：只显示打字中，不提前渲染页眉/正文
     const pendingMsg: UiMessage = {
       id: pendingId,
       role: 'assistant',
@@ -204,7 +267,6 @@ export function ChatPage() {
     setSending(true)
 
     const mem = loadMemory()
-    const card = loadCharacter()
     const contextCount = mem.contextMessageCount || 30
     const historyMsgs = [...messagesRef.current, userMsg]
       .filter((m) => m.role === 'user' || m.role === 'assistant')
@@ -220,11 +282,9 @@ export function ChatPage() {
       console.warn('[记忆检索] 失败，继续聊天:', e)
     }
 
-    let systemContent = buildCharacterSystemPrompt(card)
-    if (factsBlock) systemContent += `\n\n${factsBlock}`
-
     const history: ChatMessage[] = [
-      { role: 'system', content: systemContent },
+      ...buildCharacterSystemMessages(card),
+      ...(factsBlock ? [{ role: 'system' as const, content: factsBlock }] : []),
       ...sliced.map((m) => ({
         role: m.role as 'user' | 'assistant',
         content:
@@ -233,61 +293,161 @@ export function ChatPage() {
     ]
 
     const cfg = ConfigStorage.getApiConfig()
-    const provider = getProvider(cfg.providerId)
+    const allowContinue = !card.freshMode
     const caller = new AiCaller({
       baseUrl: cfg.baseUrl,
       apiKey: cfg.apiKey,
       model: cfg.model,
       temperature: cfg.temperature,
       topP: cfg.topP,
-      maxTokens: 800,
-      disableThinking: Boolean(provider.supportsThinkingDisable),
+      maxTokens: cfg.maxTokens,
+      // 主剧情强制关思考（不依赖 provider 标记；自定义网关也关掉）
+      disableThinking: true,
     })
 
     let streamed = ''
 
-    try {
+    const commitAssistant = (
+      content: string,
+      opts: { pending?: boolean; error?: boolean; scene?: UiMessage['scene'] } = {},
+    ) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === pendingId
+            ? {
+                ...m,
+                content,
+                pending: opts.pending ?? false,
+                error: opts.error || undefined,
+                scene: opts.scene,
+              }
+            : m,
+        ),
+      )
+    }
+
+    const streamOnce = async (msgs: ChatMessage[]) => {
+      let finishReason: string | undefined
       await caller.chatStream(
-        history,
+        msgs,
         (chunk) => {
           streamed += chunk
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === pendingId
-                ? { ...m, content: streamed, pending: true }
-                : m,
-            ),
-          )
+          // 流式阶段不落 UI，等页眉与剧情都完成后一次性渲染
         },
-        () => {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === pendingId ? { ...m, content: streamed, pending: false } : m,
-            ),
-          )
-          setSending(false)
-
-          if (streamed.trim()) {
-            void runMemoryUpdate(sliced, streamed)
-          }
-        },
-        (err) => {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === pendingId
-                ? {
-                    ...m,
-                    pending: false,
-                    error: true,
-                    content: streamed || `出错了：${err.message}`,
-                  }
-                : m,
-            ),
-          )
-          setSending(false)
+        (meta) => {
+          finishReason = meta?.finishReason
         },
       )
-    } catch {
+      return finishReason
+    }
+
+    const buildContinueMessages = (): ChatMessage[] => [
+      ...history,
+      { role: 'assistant', content: streamed },
+      { role: 'user', content: ASSISTANT_CONTINUE_PROMPT },
+    ]
+
+    const runNarrative = async (): Promise<string> => {
+      let finishReason = await streamOnce(history)
+      // 新鲜模式：不续写，靠 max_tokens 一次写完
+      if (!allowContinue) return streamed
+
+      let continueRounds = 0
+      const maxContinue = 3
+      while (
+        continueRounds < maxContinue &&
+        shouldContinueAssistant(finishReason, streamed)
+      ) {
+        continueRounds++
+        console.log('[主模型] 续写以补全段落', { finishReason, continueRounds })
+        try {
+          finishReason = await streamOnce(buildContinueMessages())
+        } catch (continueErr) {
+          console.warn('[主模型] 续写失败，保留已生成正文:', continueErr)
+          break
+        }
+      }
+      return streamed
+    }
+
+    const runSceneMeta = async () => {
+      if (!sceneHeader.enabled) return {}
+      return fetchSceneMeta({
+        character: card,
+        settings: sceneHeader,
+        storyTimeIso: storyTime,
+        userText: text,
+        prevScene,
+      })
+    }
+
+    try {
+      // 页眉短调用 ∥ 主剧情；两者都结束后再渲染（页眉在正文之上）
+      const [narrSettled, metaSettled] = await Promise.allSettled([
+        runNarrative(),
+        runSceneMeta(),
+      ])
+
+      const metaFields =
+        metaSettled.status === 'fulfilled' ? metaSettled.value : {}
+      const scene = buildMessageScene(storyTime, metaFields, sceneHeader)
+
+      if (narrSettled.status === 'fulfilled') {
+        const body = narrSettled.value
+        commitAssistant(body, {
+          pending: false,
+          error: !body.trim(),
+          scene,
+        })
+        setSending(false)
+        if (body.trim()) void runMemoryUpdate(sliced, body)
+        return
+      }
+
+      // 主剧情失败：普通模式可尝试续写；新鲜模式不续写
+      const narrErr = narrSettled.reason
+      if (
+        allowContinue &&
+        streamed.trim() &&
+        shouldContinueAssistant('content_filter', streamed)
+      ) {
+        let continueRounds = 0
+        const maxContinue = 3
+        while (
+          continueRounds < maxContinue &&
+          shouldContinueAssistant('content_filter', streamed)
+        ) {
+          continueRounds++
+          console.log('[主模型] 审查/中断后续写', { continueRounds })
+          try {
+            const fr = await streamOnce(buildContinueMessages())
+            if (!shouldContinueAssistant(fr, streamed)) break
+          } catch (continueErr) {
+            console.warn('[主模型] 续写失败，保留已生成正文:', continueErr)
+            break
+          }
+        }
+        commitAssistant(streamed, { pending: false, scene })
+        setSending(false)
+        if (streamed.trim()) void runMemoryUpdate(sliced, streamed)
+        return
+      }
+
+      const msg =
+        narrErr instanceof Error ? narrErr.message : '未知错误'
+      commitAssistant(streamed || `出错了：${msg}`, {
+        pending: false,
+        error: true,
+        scene,
+      })
+      setSending(false)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '未知错误'
+      commitAssistant(streamed || `出错了：${msg}`, {
+        pending: false,
+        error: true,
+        scene: buildMessageScene(storyTime, {}, sceneHeader),
+      })
       setSending(false)
     }
   }
@@ -365,6 +525,8 @@ export function ChatPage() {
         onClose={() => setModeOpen(false)}
         onReplyModeChange={handleReplyModeChange}
         onFreshModeChange={handleFreshModeChange}
+        onMemoryEngineChange={handleMemoryEngineChange}
+        onSceneHeaderChange={handleSceneHeaderChange}
         onOpenOutputSettings={() => setSettingsPage('character')}
       />
 
@@ -413,6 +575,7 @@ export function ChatPage() {
         userName={userName}
         userAvatar={userAvatar}
         replyMode={character.replyMode}
+        sceneHeader={character.sceneHeader}
         onUserAvatarClick={() => {
           closeOverlays()
           setPeerProfileOpen(false)

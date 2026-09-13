@@ -6,6 +6,8 @@ interface SettingsSheetProps {
   title: string
   subtitle?: string
   onBack: () => void
+  /** 顶栏正下方工具条（如标签），与标题无空隙 */
+  toolbar?: ReactNode
   footer?: ReactNode
   children: ReactNode
 }
@@ -15,6 +17,7 @@ export function SettingsSheet({
   title,
   subtitle,
   onBack,
+  toolbar,
   footer,
   children,
 }: SettingsSheetProps) {
@@ -37,6 +40,10 @@ export function SettingsSheet({
             {subtitle && <p className="truncate text-[11px] text-white/40">{subtitle}</p>}
           </div>
         </header>
+
+        {toolbar ? (
+          <div className="shrink-0 border-b border-white/10 px-3 py-2">{toolbar}</div>
+        ) : null}
 
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4">{children}</div>
 

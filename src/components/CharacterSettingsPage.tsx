@@ -3,14 +3,17 @@ import { HiOutlineCamera } from 'react-icons/hi2'
 import {
   DEFAULT_CHARACTER,
   DEFAULT_CHARACTER_AVATAR,
+  DEFAULT_GREETING,
   DEFAULT_NARRATIVE_STYLE,
   DEFAULT_OUTPUT_FORMAT,
+  DEFAULT_SCENE_HEADER,
   DEFAULT_SPEAKING_STYLE_NOVEL,
   DEFAULT_USER_AVATAR,
   REPLY_MODE_OPTIONS,
   fileToAvatarDataUrl,
   type CharacterCard,
   type ReplyMode,
+  type SceneHeaderFields,
   loadCharacter,
   saveCharacter,
   withReplyMode,
@@ -22,6 +25,14 @@ import {
 } from '../utils/personalityParts'
 import { FieldInput, FieldLabel, FieldTextarea, SettingsSheet } from './SettingsSheet'
 
+type SettingsTab = 'character' | 'style' | 'user'
+
+const SETTINGS_TABS: Array<{ id: SettingsTab; label: string }> = [
+  { id: 'character', label: '角色卡' },
+  { id: 'style', label: '文风' },
+  { id: 'user', label: '用户侧' },
+]
+
 interface CharacterSettingsPageProps {
   open: boolean
   onBack: () => void
@@ -32,6 +43,7 @@ export function CharacterSettingsPage({ open, onBack, onSaved }: CharacterSettin
   const peerFileRef = useRef<HTMLInputElement>(null)
   const userFileRef = useRef<HTMLInputElement>(null)
   const [draft, setDraft] = useState<CharacterCard>(DEFAULT_CHARACTER)
+  const [tab, setTab] = useState<SettingsTab>('character')
   const [savedHint, setSavedHint] = useState(false)
   const [peerAvatarBusy, setPeerAvatarBusy] = useState(false)
   const [userAvatarBusy, setUserAvatarBusy] = useState(false)
@@ -39,6 +51,7 @@ export function CharacterSettingsPage({ open, onBack, onSaved }: CharacterSettin
   useEffect(() => {
     if (!open) return
     setDraft(loadCharacter())
+    setTab('character')
     setSavedHint(false)
     setPeerAvatarBusy(false)
     setUserAvatarBusy(false)
@@ -108,6 +121,33 @@ export function CharacterSettingsPage({ open, onBack, onSaved }: CharacterSettin
       title="文风与角色"
       subtitle="回复模式、角色卡与文风，会写入每次对话的系统提示"
       onBack={onBack}
+      toolbar={
+        <div
+          role="tablist"
+          className="flex w-full flex-row items-center gap-1 rounded-xl bg-black/25 p-1"
+        >
+          {SETTINGS_TABS.map((item) => {
+            const active = tab === item.id
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(item.id)}
+                className={[
+                  'min-w-0 flex-1 rounded-lg px-2 py-2 text-center text-sm transition',
+                  active
+                    ? 'bg-white/12 font-medium text-white'
+                    : 'text-white/50 hover:bg-white/5 hover:text-white/75',
+                ].join(' ')}
+              >
+                {item.label}
+              </button>
+            )
+          })}
+        </div>
+      }
       footer={
         <div className="flex gap-2">
           <button
@@ -127,10 +167,9 @@ export function CharacterSettingsPage({ open, onBack, onSaved }: CharacterSettin
         </div>
       }
     >
-      <div className="space-y-5">
+      <div className="space-y-4">
+        {tab === 'character' && (
         <section className="space-y-3">
-          <h2 className="font-display text-sm font-semibold text-white/90">角色卡</h2>
-
           <div className="flex items-center gap-3">
             <input
               ref={peerFileRef}
@@ -267,12 +306,31 @@ export function CharacterSettingsPage({ open, onBack, onSaved }: CharacterSettin
               placeholder="当前关系前提、故事背景…"
             />
           </label>
+
+          <label className="block">
+            <FieldLabel>开场白预设</FieldLabel>
+            <p className="mb-1.5 text-[11px] leading-relaxed text-white/35">
+              进入空会话时，左侧会先出现这段（不调模型）。清空则不注入；可随时改。
+            </p>
+            <FieldTextarea
+              rows={10}
+              value={draft.greeting}
+              onChange={(e) => patch({ greeting: e.target.value })}
+              placeholder="空会话首条助手消息…"
+            />
+            <button
+              type="button"
+              onClick={() => patch({ greeting: DEFAULT_GREETING })}
+              className="mt-2 rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-white/40 transition hover:bg-white/5 hover:text-white/65"
+            >
+              恢复默认开场白
+            </button>
+          </label>
         </section>
+        )}
 
-        <div className="h-px bg-white/10" />
-
+        {tab === 'style' && (
         <section className="space-y-3">
-          <h2 className="font-display text-sm font-semibold text-white/90">文风</h2>
           <p className="text-[11px] leading-relaxed text-white/35">
             顶栏「模式」可快速切换「对话 / 旁白+玩法」与「普通 / 新鲜」。此处编辑对白与旁白细则。
           </p>
@@ -300,6 +358,95 @@ export function CharacterSettingsPage({ open, onBack, onSaved }: CharacterSettin
                 )
               })}
             </div>
+          </div>
+
+          <div className="space-y-2 rounded-xl border border-white/10 bg-black/20 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <h3 className="text-xs font-medium text-white/70">场景页眉</h3>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-white/35">
+                  与剧情分开请求；两者都完成后，页眉先于正文出现。时间由系统推进。
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={draft.sceneHeader.enabled}
+                onClick={() =>
+                  patch({
+                    sceneHeader: {
+                      ...draft.sceneHeader,
+                      enabled: !draft.sceneHeader.enabled,
+                    },
+                  })
+                }
+                className={[
+                  'relative h-6 w-11 shrink-0 rounded-full transition',
+                  draft.sceneHeader.enabled ? 'bg-white/25' : 'bg-white/10',
+                ].join(' ')}
+              >
+                <span
+                  className={[
+                    'absolute top-0.5 size-5 rounded-full bg-white transition',
+                    draft.sceneHeader.enabled ? 'left-5' : 'left-0.5',
+                  ].join(' ')}
+                />
+              </button>
+            </div>
+            {draft.sceneHeader.enabled && (
+              <div className="grid grid-cols-2 gap-1.5 pt-1">
+                {(
+                  [
+                    ['time', '时间'],
+                    ['location', '地点'],
+                    ['people', '现场人物'],
+                    ['weather', '天气/氛围'],
+                    ['godComment', '上帝视角评价'],
+                  ] as Array<[keyof SceneHeaderFields, string]>
+                ).map(([key, label]) => {
+                  const on = draft.sceneHeader.fields[key]
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() =>
+                        patch({
+                          sceneHeader: {
+                            ...draft.sceneHeader,
+                            fields: {
+                              ...draft.sceneHeader.fields,
+                              [key]: !on,
+                            },
+                          },
+                        })
+                      }
+                      className={[
+                        'rounded-lg border px-2.5 py-2 text-left text-[12px] transition',
+                        on
+                          ? 'border-white/20 bg-white/10 text-white'
+                          : 'border-white/8 bg-transparent text-white/40',
+                      ].join(' ')}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() =>
+                patch({
+                  sceneHeader: {
+                    enabled: true,
+                    fields: { ...DEFAULT_SCENE_HEADER.fields },
+                  },
+                })
+              }
+              className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-white/40 transition hover:bg-white/5 hover:text-white/65"
+            >
+              恢复页眉默认
+            </button>
           </div>
 
           <label className="block">
@@ -364,11 +511,13 @@ export function CharacterSettingsPage({ open, onBack, onSaved }: CharacterSettin
             />
           </label>
         </section>
+        )}
 
-        <div className="h-px bg-white/10" />
-
+        {tab === 'user' && (
         <section className="space-y-3">
-          <h2 className="font-display text-sm font-semibold text-white/90">用户侧</h2>
+          <p className="text-[11px] leading-relaxed text-white/35">
+            名字与人设会写入主模型系统提示；性别、关系为扩展字段。
+          </p>
 
           <div className="flex items-center gap-3">
             <input
@@ -416,24 +565,49 @@ export function CharacterSettingsPage({ open, onBack, onSaved }: CharacterSettin
             </div>
           </div>
 
-          <label className="block">
-            <FieldLabel>你的名字</FieldLabel>
-            <FieldInput
-              value={draft.userName}
-              onChange={(e) => patch({ userName: e.target.value })}
-              placeholder="我"
-            />
-          </label>
-          <label className="block">
-            <FieldLabel>你的人设（可选）</FieldLabel>
-            <FieldTextarea
-              rows={3}
-              value={draft.userPersona}
-              onChange={(e) => patch({ userPersona: e.target.value })}
-              placeholder="对方眼里的你…"
-            />
-          </label>
+          <div className="space-y-3 rounded-xl border border-white/10 bg-black/20 p-3">
+            <h3 className="text-xs font-medium text-white/70">用户设定</h3>
+
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <FieldLabel>姓名</FieldLabel>
+                <FieldInput
+                  value={draft.userName}
+                  onChange={(e) => patch({ userName: e.target.value })}
+                  placeholder="我"
+                />
+              </label>
+              <label className="block">
+                <FieldLabel>性别</FieldLabel>
+                <FieldInput
+                  value={draft.userGender}
+                  onChange={(e) => patch({ userGender: e.target.value })}
+                  placeholder="女 / 男 / 其他"
+                />
+              </label>
+            </div>
+
+            <label className="block">
+              <FieldLabel>与角色的关系</FieldLabel>
+              <FieldInput
+                value={draft.userRelationship}
+                onChange={(e) => patch({ userRelationship: e.target.value })}
+                placeholder="老板与投资品、暧昧、朋友…"
+              />
+            </label>
+
+            <label className="block">
+              <FieldLabel>用户性格 / 人设</FieldLabel>
+              <FieldTextarea
+                rows={4}
+                value={draft.userPersona}
+                onChange={(e) => patch({ userPersona: e.target.value })}
+                placeholder="对方眼里的你：随和、不讲究、偶尔毒舌…"
+              />
+            </label>
+          </div>
         </section>
+        )}
       </div>
     </SettingsSheet>
   )

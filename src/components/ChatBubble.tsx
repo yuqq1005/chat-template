@@ -1,7 +1,9 @@
 import type { UiMessage } from '../types'
-import type { ReplyMode } from '../utils/characterStorage'
-import { DEFAULT_USER_AVATAR } from '../utils/characterStorage'
+import type { ReplyMode, SceneHeaderSettings } from '../utils/characterStorage'
+import { DEFAULT_SCENE_HEADER, DEFAULT_USER_AVATAR } from '../utils/characterStorage'
 import { renderNarrationWithDialogueHighlight } from '../utils/narrationHighlight'
+import { sanitizeModelOutputForDisplay } from '../utils/sanitizeModelOutput'
+import { SceneMetaHeader } from './SceneMetaHeader'
 
 interface ChatBubbleProps {
   message: UiMessage
@@ -10,6 +12,7 @@ interface ChatBubbleProps {
   userName?: string
   userAvatar?: string
   replyMode?: ReplyMode
+  sceneHeader?: SceneHeaderSettings
   onUserAvatarClick?: () => void
   onPeerAvatarClick?: () => void
 }
@@ -21,16 +24,26 @@ export function ChatBubble({
   userName = '我',
   userAvatar = DEFAULT_USER_AVATAR,
   replyMode = 'im_bubble',
+  sceneHeader = DEFAULT_SCENE_HEADER,
   onUserAvatarClick,
   onPeerAvatarClick,
 }: ChatBubbleProps) {
   const isUser = message.role === 'user'
   const narrativeLeft = !isUser && replyMode === 'immersive_novel'
   const avatarSrc = isUser ? userAvatar : peerAvatar
+  const displayContent = isUser
+    ? message.content
+    : sanitizeModelOutputForDisplay(message.content)
+
+  const sceneBlock =
+    !isUser && message.scene ? (
+      <SceneMetaHeader scene={message.scene} settings={sceneHeader} />
+    ) : null
 
   if (narrativeLeft) {
     return (
       <div className="bubble-enter flex w-full flex-col gap-1.5 pr-6 sm:pr-16">
+        {sceneBlock}
         <div
           className={[
             'max-w-full text-[15px] leading-[1.75]',
@@ -46,8 +59,8 @@ export function ChatBubble({
           ) : (
             <p className="whitespace-pre-wrap break-words">
               {message.error
-                ? message.content
-                : renderNarrationWithDialogueHighlight(message.content)}
+                ? displayContent
+                : renderNarrationWithDialogueHighlight(displayContent)}
             </p>
           )}
         </div>
@@ -85,6 +98,7 @@ export function ChatBubble({
         : avatarButton({ title: '编辑角色资料', onClick: onPeerAvatarClick })}
       <div className={`flex max-w-[78%] flex-col gap-1 ${isUser ? 'items-end' : 'items-start'}`}>
         <span className="px-1 text-[11px] text-white/40">{isUser ? userName : peerName}</span>
+        {!isUser ? <div className="w-full">{sceneBlock}</div> : null}
         <div
           className={[
             'rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed shadow-glass backdrop-blur-md',
@@ -101,7 +115,7 @@ export function ChatBubble({
               <span className="typing-dot size-1.5 rounded-full bg-white/80" />
             </span>
           ) : (
-            <p className="whitespace-pre-wrap break-words">{message.content}</p>
+            <p className="whitespace-pre-wrap break-words">{displayContent}</p>
           )}
         </div>
       </div>

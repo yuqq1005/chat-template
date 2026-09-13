@@ -24,20 +24,7 @@ export interface MemorySettings {
   facts: MemoryFact[]
 }
 
-export const DEFAULT_MEMORY_TABLE = `# 角色设定
-- 姓名：
-- 性格特点：
-- 性别：
-- 说话风格：
-- 职业：
-
-# 用户设定
-- 姓名：
-- 性别：
-- 与角色的关系：
-- 用户性格：
-
-# 背景设定
+export const DEFAULT_MEMORY_TABLE = `# 背景设定
 - 时间地点：
 - 事件：
 
@@ -63,6 +50,21 @@ export const DEFAULT_MEMORY_TABLE = `# 角色设定
 |----------|----------|----------|
 `
 
+/** 去掉旧版记忆表顶部的角色/用户设定块（已迁到角色卡） */
+export function stripLegacyMemoryProfileSections(markdown: string): string {
+  if (!markdown.trim()) return DEFAULT_MEMORY_TABLE
+  if (!markdown.includes('# 角色设定') && !markdown.includes('# 用户设定')) {
+    return markdown
+  }
+  const parts = markdown.split(/(?=^# )/m)
+  const kept = parts.filter((part) => {
+    const head = (part.split(/\r?\n/)[0] || '').trim()
+    return head !== '# 角色设定' && head !== '# 用户设定'
+  })
+  const next = kept.join('').replace(/^\s+/, '').trim()
+  return next || DEFAULT_MEMORY_TABLE
+}
+
 export const DEFAULT_MEMORY: MemorySettings = {
   contextMessageCount: 30,
   memoryTable: DEFAULT_MEMORY_TABLE,
@@ -76,11 +78,14 @@ export function loadMemory(): MemorySettings {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return { ...DEFAULT_MEMORY, facts: [] }
     const parsed = JSON.parse(raw) as Partial<MemorySettings>
+    const memoryTable = stripLegacyMemoryProfileSections(
+      parsed.memoryTable || DEFAULT_MEMORY_TABLE,
+    )
     return {
       ...DEFAULT_MEMORY,
       ...parsed,
       facts: Array.isArray(parsed.facts) ? parsed.facts : [],
-      memoryTable: parsed.memoryTable || DEFAULT_MEMORY_TABLE,
+      memoryTable,
       contextMessageCount: Math.min(
         200,
         Math.max(4, Number(parsed.contextMessageCount) || 30),
@@ -92,7 +97,13 @@ export function loadMemory(): MemorySettings {
 }
 
 export function saveMemory(settings: MemorySettings): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({
+      ...settings,
+      memoryTable: stripLegacyMemoryProfileSections(settings.memoryTable),
+    }),
+  )
 }
 
 export function createFact(

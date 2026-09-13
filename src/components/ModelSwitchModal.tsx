@@ -9,6 +9,9 @@ import {
 import {
   ConfigStorage,
   DEFAULT_CONFIG,
+  MAX_MAX_TOKENS,
+  MIN_MAX_TOKENS,
+  normalizeMaxTokens,
   type AppConfig,
 } from '../utils/configStorage'
 import { fetchRemoteModels } from '../utils/fetchModels'
@@ -95,6 +98,7 @@ export function ModelSwitchModal({ open, onClose, onSaved }: ModelSwitchModalPro
       baseUrl: (config.baseUrl || provider.baseUrl).replace(/\/$/, ''),
       model: config.model.trim(),
       providerId: config.providerId || provider.id,
+      maxTokens: normalizeMaxTokens(config.maxTokens),
     }
     if (!next.baseUrl) {
       setResult({ ok: false, message: '请填写 API Base URL' })
@@ -329,6 +333,37 @@ export function ModelSwitchModal({ open, onClose, onSaved }: ModelSwitchModalPro
               onChange={(e) => patch({ temperature: Number(e.target.value) })}
               className="w-full accent-[var(--accent-a)]"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="text-white/50">输出上限 max_tokens</span>
+              <input
+                type="number"
+                min={MIN_MAX_TOKENS}
+                max={MAX_MAX_TOKENS}
+                step={100}
+                value={config.maxTokens}
+                onChange={(e) =>
+                  patch({ maxTokens: normalizeMaxTokens(e.target.value) })
+                }
+                className="w-24 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-right tabular-nums text-white/80 outline-none focus:border-[var(--accent-a)]/50"
+              />
+            </div>
+            <input
+              type="range"
+              min={MIN_MAX_TOKENS}
+              max={MAX_MAX_TOKENS}
+              step={100}
+              value={normalizeMaxTokens(config.maxTokens)}
+              onChange={(e) =>
+                patch({ maxTokens: normalizeMaxTokens(e.target.value) })
+              }
+              className="w-full accent-[var(--accent-a)]"
+            />
+            <p className="text-[11px] leading-relaxed text-white/35">
+              主剧情单次生成上限（{MIN_MAX_TOKENS}–{MAX_MAX_TOKENS}）。调大可减少截断。
+            </p>
           </div>
 
           {result && (
