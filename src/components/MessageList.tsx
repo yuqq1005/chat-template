@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { UiMessage } from '../types'
 import type { ReplyMode, SceneHeaderSettings } from '../utils/characterStorage'
+import type { GameplaySettings } from '../utils/gameplayStorage'
 import { ChatBubble } from './ChatBubble'
 
 interface MessageListProps {
@@ -11,6 +12,7 @@ interface MessageListProps {
   userAvatar?: string
   replyMode?: ReplyMode
   sceneHeader?: SceneHeaderSettings
+  gameplaySettings?: GameplaySettings
   onUserAvatarClick?: () => void
   onPeerAvatarClick?: () => void
 }
@@ -23,6 +25,7 @@ export function MessageList({
   userAvatar,
   replyMode,
   sceneHeader,
+  gameplaySettings,
   onUserAvatarClick,
   onPeerAvatarClick,
 }: MessageListProps) {
@@ -50,6 +53,7 @@ export function MessageList({
             userAvatar={userAvatar}
             replyMode={replyMode}
             sceneHeader={sceneHeader}
+            gameplaySettings={gameplaySettings}
             onUserAvatarClick={onUserAvatarClick}
             onPeerAvatarClick={onPeerAvatarClick}
           />

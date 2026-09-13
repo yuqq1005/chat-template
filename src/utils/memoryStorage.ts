@@ -1,5 +1,10 @@
 /** 记忆：Markdown 表 + 结构化事实 + 上下文轮数 */
 
+import {
+  buildRelevantMemoryFactsBlock,
+  retrieveRelevantMemoryFacts,
+} from './memoryRetrieval'
+
 export interface MemoryFact {
   id: string
   subject: string
@@ -127,39 +132,20 @@ export function createFact(
   }
 }
 
-/** 简易检索：按 query 子串打分，取 topN */
+/** 兼容旧调用；新代码请直接用 memoryRetrieval.retrieveRelevantMemoryFacts */
 export function retrieveFacts(
   facts: MemoryFact[],
   query: string,
   limit = 10,
 ): MemoryFact[] {
-  const q = query.trim().toLowerCase()
-  if (!q) return facts.filter((f) => f.status === 'active').slice(0, limit)
-
-  const scored = facts
-    .filter((f) => f.status === 'active')
-    .map((f) => {
-      const hay = `${f.factText} ${f.subject} ${f.predicate} ${f.object}`.toLowerCase()
-      let score = 0
-      for (const token of q.split(/\s+/).filter(Boolean)) {
-        if (hay.includes(token)) score += 10
-      }
-      score += (f.importance || 0) * 3
-      score += (f.confidence || 0) * 2
-      return { f, score }
-    })
-    .filter((x) => x.score > 0)
-    .sort((a, b) => b.score - a.score)
-
-  return scored.slice(0, limit).map((x) => x.f)
+  return retrieveRelevantMemoryFacts(facts, query, {
+    limit,
+    minScore: 7,
+    lastUserMessage: query,
+  })
 }
 
+/** 注入块：委托 memoryRetrieval（对齐 freeapp 富格式） */
 export function buildMemoryFactsBlock(facts: MemoryFact[]): string {
-  if (!facts.length) return ''
-  let out = '--- [相关长期记忆] ---\n'
-  out += '以下事实请自然参考，不要机械复述。\n\n'
-  facts.forEach((fact, i) => {
-    out += `${i + 1}. ${fact.factText}\n`
-  })
-  return out
+  return buildRelevantMemoryFactsBlock(facts)
 }

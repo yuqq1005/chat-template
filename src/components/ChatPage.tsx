@@ -21,12 +21,15 @@ import {
   type ReplyMode,
 } from '../utils/characterStorage'
 import {
-  buildMemoryFactsBlock,
   loadMemory,
-  retrieveFacts,
   type MemorySettings,
 } from '../utils/memoryStorage'
 import { loadFactsForRetrieval, runSecondaryMemoryUpdate } from '../utils/memoryOps'
+import {
+  buildMemoryRetrievalQuery,
+  buildRelevantMemoryFactsBlock,
+  retrieveRelevantMemoryFacts,
+} from '../utils/memoryRetrieval'
 import {
   ASSISTANT_CONTINUE_PROMPT,
   shouldContinueAssistant,
@@ -40,6 +43,12 @@ import {
   fetchSceneMeta,
   nextStoryTimeFromMessages,
 } from '../utils/sceneMeta'
+import { fetchGameplay } from '../utils/gameplayMeta'
+import {
+  hasAnyGameplayEnabled,
+  loadGameplay,
+  type GameplaySettings,
+} from '../utils/gameplayStorage'
 import type { UiMessage } from '../types'
 import { ApiPanel } from './ApiPanel'
 import { BackgroundPicker } from './BackgroundPicker'
@@ -48,6 +57,7 @@ import { CharacterSettingsPage } from './CharacterSettingsPage'
 import { ChatHeader } from './ChatHeader'
 import { ChatInput } from './ChatInput'
 import { ConfirmClearIdbModal } from './ConfirmClearIdbModal'
+import { GameplaySettingsPage } from './GameplaySettingsPage'
 import { MemorySettingsPage } from './MemorySettingsPage'
 import { MessageList } from './MessageList'
 import { ModelSwitchModal } from './ModelSwitchModal'
@@ -79,6 +89,7 @@ export function ChatPage() {
   const [bgSettings, setBgSettings] = useState<BgSettings>(() => loadBgSettings())
   const [character, setCharacter] = useState<CharacterCard>(() => loadCharacter())
   const [, setMemory] = useState<MemorySettings>(() => loadMemory())
+  const [gameplaySettings, setGameplaySettings] = useState<GameplaySettings>(() => loadGameplay())
 
   const modeBtnRef = useRef<HTMLButtonElement>(null)
   const themeBtnRef = useRef<HTMLButtonElement>(null)
@@ -276,8 +287,16 @@ export function ChatPage() {
     let factsBlock = ''
     try {
       const idbFacts = await loadFactsForRetrieval()
-      const relevant = retrieveFacts(idbFacts, text, 8)
-      factsBlock = buildMemoryFactsBlock(relevant)
+      const queryText = buildMemoryRetrievalQuery(text, historyMsgs)
+      const relevant = retrieveRelevantMemoryFacts(idbFacts, queryText, {
+        limit: 10,
+        minScore: 7,
+        lastUserMessage: text,
+      })
+      factsBlock = buildRelevantMemoryFactsBlock(relevant)
+      if (relevant.length) {
+        console.log('[记忆检索] 注入主模型 facts 数量:', relevant.length)
+      }
     } catch (e) {
       console.warn('[记忆检索] 失败，继续聊天:', e)
     }
@@ -309,7 +328,13 @@ export function ChatPage() {
 
     const commitAssistant = (
       content: string,
-      opts: { pending?: boolean; error?: boolean; scene?: UiMessage['scene'] } = {},
+      opts: {
+        pending?: boolean
+        error?: boolean
+        scene?: UiMessage['scene']
+        gameplay?: UiMessage['gameplay']
+        gameplayLoading?: boolean
+      } = {},
     ) => {
       setMessages((prev) =>
         prev.map((m) =>
@@ -320,10 +345,36 @@ export function ChatPage() {
                 pending: opts.pending ?? false,
                 error: opts.error || undefined,
                 scene: opts.scene,
+                gameplay: opts.gameplay,
+                gameplayLoading: opts.gameplayLoading || undefined,
               }
             : m,
         ),
       )
+    }
+
+    const runGameplayAfterNarrative = async (body: string, scene: UiMessage['scene']) => {
+      if (card.freshMode) return
+      const gp = loadGameplay()
+      if (!body.trim() || !hasAnyGameplayEnabled(gp)) return
+      commitAssistant(body, { pending: false, scene, gameplayLoading: true })
+      try {
+        const data = await fetchGameplay({
+          character: card,
+          settings: gp,
+          userText: text,
+          narrative: body,
+        })
+        commitAssistant(body, {
+          pending: false,
+          scene,
+          gameplay: data ?? undefined,
+          gameplayLoading: false,
+        })
+      } catch (e) {
+        console.warn('[玩法] 失败，仅保留剧情:', e)
+        commitAssistant(body, { pending: false, scene, gameplayLoading: false })
+      }
     }
 
     const streamOnce = async (msgs: ChatMessage[]) => {
@@ -400,7 +451,10 @@ export function ChatPage() {
           scene,
         })
         setSending(false)
-        if (body.trim()) void runMemoryUpdate(sliced, body)
+        if (body.trim()) {
+          void runMemoryUpdate(sliced, body)
+          void runGameplayAfterNarrative(body, scene)
+        }
         return
       }
 
@@ -429,7 +483,10 @@ export function ChatPage() {
         }
         commitAssistant(streamed, { pending: false, scene })
         setSending(false)
-        if (streamed.trim()) void runMemoryUpdate(sliced, streamed)
+        if (streamed.trim()) {
+          void runMemoryUpdate(sliced, streamed)
+          void runGameplayAfterNarrative(streamed, scene)
+        }
         return
       }
 
@@ -568,6 +625,12 @@ export function ChatPage() {
         onSaved={setMemory}
       />
 
+      <GameplaySettingsPage
+        open={settingsPage === 'gameplay'}
+        onBack={() => setSettingsPage(null)}
+        onSaved={setGameplaySettings}
+      />
+
       <MessageList
         messages={messages}
         peerAvatar={peerAvatar}
@@ -576,6 +639,7 @@ export function ChatPage() {
         userAvatar={userAvatar}
         replyMode={character.replyMode}
         sceneHeader={character.sceneHeader}
+        gameplaySettings={gameplaySettings}
         onUserAvatarClick={() => {
           closeOverlays()
           setPeerProfileOpen(false)

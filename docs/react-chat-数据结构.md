@@ -1,7 +1,7 @@
 # react-chat 现有数据结构说明
 
 > 项目路径：`e:\kulan\template\react-chat`  
-> 整理日期：2026-09-10  
+> 整理日期：2026-09-13  
 > 说明：以当前代码实现为准（非 freeapp 原文）
 
 ---
@@ -15,6 +15,7 @@
 | **LocalStorage** | `kulan.chat.memory` | 记忆表 Markdown + 上下文轮数 |
 | **LocalStorage** | `kulan.chat.config` | API / 模型配置 |
 | **LocalStorage** | `kulan.chat.bg` | 聊天背景设置 |
+| **LocalStorage** | `kulan.chat.gameplay` | 玩法四栏开关与自定义显示名 |
 
 当前单聊联系人 ID 常量：`DEFAULT_CONTACT_ID = "default"`。
 
@@ -23,12 +24,15 @@
 | 文件 | 职责 |
 |------|------|
 | `src/utils/idb.ts` | IndexedDB 打开与通用读写 |
-| `src/utils/messageStore.ts` | 消息持久化 |
+| `src/utils/messageStore.ts` | 消息持久化（含 `gameplay`） |
 | `src/utils/memoryDb.ts` | episodes / facts |
 | `src/utils/memoryStorage.ts` | 记忆设置（LSStorage）+ Fact 基础类型 |
-| `src/utils/memoryOps.ts` | 副模型 `<memory_ops>` / `<memory_diff>` |
+| `src/utils/memoryOps.ts` | 副模型 `<memory_ops>` / `<memory_diff>`；无 ops 时 `convertMemoryDiffToFacts` 旁路 |
+| `src/utils/memoryRetrieval.ts` | 检索 query / 评分 / 去重 / 相关 facts 注入块 |
 | `src/utils/characterStorage.ts` | 角色卡 |
 | `src/utils/sceneMeta.ts` | 故事时间推进 + 页眉短调用 `<scene_meta>` |
+| `src/utils/gameplayStorage.ts` | 玩法四栏设置 + 固定花体装饰线 |
+| `src/utils/gameplayMeta.ts` | 剧情后串行二次调用 `<gameplay>` |
 | `src/utils/configStorage.ts` | API 配置 |
 | `src/utils/bgSettings.ts` | 背景 |
 | `src/types.ts` | UI 消息类型 |
@@ -70,6 +74,10 @@ interface UiMessage {
   error?: boolean
   /** 仅 assistant；展示在正文前，不进模型 history 的 content */
   scene?: MessageScene
+  /** 仅 assistant；剧情后二次生成的玩法面板，落库 */
+  gameplay?: MessageGameplay
+  /** 玩法二次调用进行中，不落库 */
+  gameplayLoading?: boolean
 }
 
 // src/utils/messageStore.ts
@@ -80,6 +88,8 @@ interface StoredMessage extends UiMessage {
 ```
 
 **场景页眉：** 时间由客户端生成（近 5 年随机，每轮 +1～5 分钟）。地点 / 现场人物 / 天气 / 上帝视角评价由**另一次短调用**强制输出 `<scene_meta>` XML；与主剧情并行，**两者都完成后**再渲染（页眉在正文之上）。主剧情 system **不再**要求 `【页眉】` 行。开关见 `CharacterCard.sceneHeader`。`loadMessages` 须带回 `scene`。
+
+**玩法面板：** 主剧情（及页眉）渲染完成后，若有启用栏且**非新鲜模式**，再**串行**短调用 `<gameplay>`；数据挂在该条助手消息上。消息下方四个 Tab（仅启用栏），点开看详情；花体装饰线固定、不交给模型。设置见 `kulan.chat.gameplay`。`loadMessages` 须带回 `gameplay`；`gameplayLoading` 不落库。**新鲜模式不调用玩法。**
 
 **示例：**
 
@@ -95,6 +105,16 @@ interface StoredMessage extends UiMessage {
     "weather": "晚风微凉",
     "godComment": "确认关系后的第一秒，空气比合同还紧。"
   },
+  "gameplay": {
+    "status": {
+      "outfit": "黑色短袖与工装裤",
+      "action": "握着水瓶，眼神飘忽",
+      "mood": "懵、强装镇定",
+      "innerOs": "她刚说喜欢我？……",
+      "affection": "0%",
+      "aboutYou": "突然告白的同学"
+    }
+  },
   "contactId": "default",
   "createdAt": 1725960000000
 }
@@ -102,7 +122,7 @@ interface StoredMessage extends UiMessage {
 
 **规则：**
 - `pending === true` 的气泡不写入
-- 保存时按 `contactId` 清空后整表重写该联系人消息
+- 保存时去掉 `gameplayLoading`；按 `contactId` 清空后整表重写该联系人消息
 
 ### 1.3 `memoryEpisodes` → `MemoryEpisode`
 
@@ -268,7 +288,7 @@ interface CharacterCard {
 | 项 | 说明 |
 |----|------|
 | `freshMode: false` | 普通：按气泡原文发给模型 |
-| `freshMode: true` | 新鲜：API 用户消息 = `原文 + "\n\n" + VITE_FRESH_APPEND_PROMPT`；提示词为空则不追加；**气泡仍只存/显原文** |
+| `freshMode: true` | 新鲜：API 用户消息 = `原文 + "\n\n" + VITE_FRESH_APPEND_PROMPT`；提示词为空则不追加；**气泡仍只存/显原文**；**不调用玩法二次生成** |
 | `react-chat/.env` | `VITE_FRESH_APPEND_PROMPT=` 开发者自填；**界面不提供编辑**；改后需重启 Vite |
 
 顶栏「模式」按钮打开面板可切换上述两套开关；**新鲜模式开启时该按钮呈纯黄色**。文风细则仍在「文风与角色」设置页。
@@ -354,6 +374,30 @@ interface BgSettings {
 }
 ```
 
+### 2.5 玩法 `kulan.chat.gameplay` → `GameplaySettings`
+
+设置入口：顶栏设置菜单 → **玩法**。
+
+```ts
+type GameplayPanelId = 'status' | 'phone' | 'social' | 'promises'
+
+interface GameplayPanelConfig {
+  enabled: boolean   // 关则不请求、不显示 Tab
+  label: string      // 自定义显示名（默认：状态面板/手机动态/社交圈/约定）
+}
+
+type GameplaySettings = Record<GameplayPanelId, GameplayPanelConfig>
+```
+
+| id | 默认名 | 面板字段（中文展示） |
+|----|--------|----------------------|
+| `status` | 状态面板 | 穿搭 / 动作 / 心情 / 内心OS / 好感 / 关于你 |
+| `phone` | 手机动态 | 通知 / 便签 / 搜索记录 |
+| `social` | 社交圈 | 群聊 / 私信 |
+| `promises` | 约定 | 待完成 / 已完成 |
+
+四栏各有**固定**花体装饰线（`GAMEPLAY_DECORATIONS`），不交给模型生成。
+
 ---
 
 ## 3. 副模型交换结构（不直接落库的中间格式）
@@ -402,6 +446,44 @@ JSON 数组，打补丁到 Markdown 记忆表：
 ]
 ```
 
+**旁路与失效（对齐 freeapp）：**
+
+1. 无论是否有 `memory_ops`，diff 都会 patch `memoryTable`。
+2. `section === "未来"` 的 `delete` 会失效 future / promise / future_plan 类 facts（`invalidateFactsFromMemoryDiffDelete`）。
+3. **仅当本轮没有成功应用 `memory_ops`** 时，`convertMemoryDiffToFacts` 把 update/append 转成 `memoryFacts` 写入 IndexedDB（兜底，避免只有表更新、结构化库空窗）。
+
+### 3.3 主模型记忆检索（`memoryRetrieval.ts`）
+
+| 项 | 行为 |
+|----|------|
+| query | `buildMemoryRetrievalQuery` = 本轮用户句 + 最近 4 条消息 |
+| 评分 | `scoreMemoryFact`（词法命中 + type/timeScope 偏置 + 本轮短语加成 − 老化） |
+| 过滤 | 聊天常用 `limit: 10`、`minScore: 7`；无达标时回退取正分 Top 8 |
+| 去重 | 精确 S/P/O 键 + Jaccard 相似度 + 每 predicate 上限 2 |
+| 注入块 | `buildRelevantMemoryFactsBlock` → `--- [相关结构化长期记忆] ---` + `<relevant_memory_facts>`（含类型 / 时间范围 / 可信度 / 重要性） |
+
+### 3.4 玩法二次调用 `<gameplay>`（`gameplayMeta.ts`）
+
+主剧情完成后串行请求（**新鲜模式跳过**）；system 只要求**当前启用**的子树。解析结果写入 `UiMessage.gameplay`。
+
+```xml
+<gameplay>
+  <status>
+    <outfit>…</outfit><action>…</action><mood>…</mood>
+    <inner_os>…</inner_os><affection>…</affection><about_you>…</about_you>
+  </status>
+  <phone>
+    <notices>…</notices><notes>…</notes><searches>…</searches>
+  </phone>
+  <social>
+    <group_chat>…</group_chat><dm>…</dm>
+  </social>
+  <promises>
+    <pending>…</pending><done>…</done>
+  </promises>
+</gameplay>
+```
+
 ---
 
 ## 4. 数据流（简图）
@@ -409,18 +491,17 @@ JSON 数组，打补丁到 Markdown 记忆表：
 ```
 用户发送
   │
-  ├─ 从 IndexedDB 检索相关 memoryFacts → 注入 system
+  ├─ buildMemoryRetrievalQuery(用户句 + 近 4 条)
+  │     → retrieveRelevantMemoryFacts(limit:10, minScore:7) → 注入 system
   ├─ 用 CharacterCard 按 replyMode 拼 system
-  │     ├─ im_bubble（对话）→ 短气泡文风
-  │     └─ immersive_novel（旁白+玩法）→ 对白腔 + 旁白 + 输出契约
   ├─ 按 contextMessageCount 截取最近 messages
   ├─ 若 freshMode：本轮用户 API 内容 = buildUserContentForApi（气泡仍存原文）
-  ├─ 主模型流式回复 → 更新 UI → 持久化 messages（非 pending）
-  │     · immersive_novel：content 仍为整段字符串（左叙事块渲染待接）
+  ├─ 主模型流式回复 ∥ 场景页眉短调用 → 先渲染剧情(+页眉)
+  ├─ （串行）普通模式且有启用玩法栏 → fetchGameplay → 消息下方 Tab；新鲜模式跳过
   │
   └─ 副模型（后台）
        ├─ <memory_ops> → episode + facts（IndexedDB）
-       └─ <memory_diff> → 更新 memoryTable（LocalStorage）
+       └─ <memory_diff> → 更新 memoryTable；无 ops 时旁路写 facts
 ```
 
 ---
@@ -453,8 +534,12 @@ Object.keys(localStorage)
 | `contact.personality` 等 | `CharacterCard`（LocalStorage） |
 | `contact.memoryTableContent` | `MemorySettings.memoryTable` |
 | 副模型 `memory_ops` / `memory_diff` | `memoryOps.ts` 同思路 |
+| `convertMemoryDiffToFacts`（无 ops 兜底） | `memoryOps.convertMemoryDiffToFacts` |
+| `retrieveRelevantMemoryFacts` / `scoreMemoryFact` | `memoryRetrieval.ts` |
+| `buildRelevantMemoryFactsBlock` | 同文件富格式注入块 |
+| — | 玩法四栏：`gameplayStorage` + `gameplayMeta`（本项目扩展） |
 
-当前尚未实现：多联系人、世界书 `worldBook[]` 独立 store（可后续扩展）。
+**刻意差异：** 记忆表不含「角色设定 / 用户设定」（人设在角色卡）；尚无多联系人、世界书 `worldBook[]`。
 
 ---
 

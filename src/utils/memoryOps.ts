@@ -283,6 +283,151 @@ export function applyMemoryDiff(oldMarkdown: string, operations: DiffOp[]): stri
   return lines.join('\n')
 }
 
+/**
+ * 无 memory_ops 时，把 memory_diff 转成 facts（对齐 freeapp convertMemoryDiffToFacts）
+ * 只处理 update / append；delete 走 invalidateFactsFromMemoryDiffDelete
+ */
+export function convertMemoryDiffToFacts(
+  diffArray: DiffOp[],
+  options: { contactId: string; subjectName: string; sourceEpisodeId: string },
+): IdbMemoryFact[] {
+  if (!Array.isArray(diffArray)) return []
+  const { contactId, subjectName, sourceEpisodeId } = options
+  const facts: IdbMemoryFact[] = []
+  const now = Date.now()
+
+  for (const op of diffArray) {
+    if (!op || typeof op !== 'object') continue
+    const section = op.section != null ? String(op.section) : ''
+
+    if (op.op === 'update') {
+      const key = op.key != null ? String(op.key) : ''
+      const valueStr = op.value != null ? String(op.value) : ''
+      const pred = section ? `${section}.${key}` : key
+      facts.push({
+        id: memoryId('fact'),
+        contactId,
+        subject: subjectName,
+        predicate: pred,
+        object: valueStr,
+        factText: `【${section}】${key}：${valueStr}`,
+        sourceEpisodeId,
+        confidence: 0.7,
+        importance: 0.5,
+        status: 'active',
+        createdAt: now,
+        updatedAt: now,
+        validFrom: now,
+        validTo: null,
+        type: section === '现在' ? 'current_state' : section === '未来' ? 'future_plan' : 'other',
+        timeScope:
+          section === '现在' ? 'current' : section === '未来' ? 'future' : section === '过去' ? 'past' : 'long_term',
+        metadata: { source: 'memory_diff', section },
+      })
+    } else if (op.op === 'append') {
+      const line = op.line != null ? String(op.line).trim() : ''
+      if (!line) continue
+      facts.push({
+        id: memoryId('fact'),
+        contactId,
+        subject: subjectName,
+        predicate: section || 'append',
+        object: line,
+        factText: line,
+        sourceEpisodeId,
+        confidence: 0.7,
+        importance: 0.5,
+        status: 'active',
+        createdAt: now,
+        updatedAt: now,
+        validFrom: now,
+        validTo: null,
+        type: section === '过去' ? 'past_event' : section === '重要物品' ? 'item' : 'other',
+        timeScope: section === '过去' ? 'past' : 'long_term',
+        metadata: { source: 'memory_diff', section },
+      })
+    }
+  }
+
+  return facts
+}
+
+/** 「未来」分区 delete 可失效 future/promise 类 facts（对齐 freeapp） */
+export async function invalidateFactsFromMemoryDiffDelete(
+  diffArray: DiffOp[],
+  contactId: string,
+): Promise<number> {
+  if (!Array.isArray(diffArray) || !contactId) return 0
+
+  const activeFacts = await getFactsByContact(contactId, true)
+  const now = Date.now()
+  const invalidatedIds = new Set<string>()
+  let count = 0
+
+  const isFutureIshFact = (f: IdbMemoryFact) => {
+    const m = (f.metadata || {}) as Record<string, unknown>
+    if (m.timeScope === 'future' || f.timeScope === 'future') return true
+    if (m.type === 'promise' || m.type === 'future_plan') return true
+    if (f.type === 'promise' || f.type === 'future_plan') return true
+    const p = f.predicate != null ? String(f.predicate) : ''
+    return p === 'promise' || p === 'future_plan' || p === 'new_suggestion' || p.startsWith('未来.')
+  }
+
+  const entityMatchesKeyword = (entities: unknown, keyword: string) => {
+    if (!Array.isArray(entities) || !keyword) return false
+    for (const e of entities) {
+      if (!e || typeof e !== 'object') continue
+      const ent = e as { name?: unknown; description?: unknown }
+      const name = ent.name != null ? String(ent.name) : ''
+      const desc = ent.description != null ? String(ent.description) : ''
+      if (name.includes(keyword) || desc.includes(keyword)) return true
+    }
+    return false
+  }
+
+  const factMatchesKeyword = (f: IdbMemoryFact, keyword: string) => {
+    if (!keyword.trim()) return false
+    if (f.factText != null && String(f.factText).includes(keyword)) return true
+    if (f.object != null && String(f.object).includes(keyword)) return true
+    return entityMatchesKeyword(f.metadata && (f.metadata as { entities?: unknown }).entities, keyword)
+  }
+
+  for (const op of diffArray) {
+    if (!op || op.op !== 'delete') continue
+    const section = op.section != null ? String(op.section).trim() : ''
+    if (section !== '未来') continue
+    const keyword = op.keyword != null ? String(op.keyword) : ''
+    if (!keyword.trim()) continue
+
+    for (const f of activeFacts) {
+      if (!f || invalidatedIds.has(f.id)) continue
+      if (!isFutureIshFact(f)) continue
+      if (!factMatchesKeyword(f, keyword)) continue
+
+      await saveFact({
+        ...f,
+        status: 'inactive',
+        validTo: now,
+        updatedAt: now,
+        metadata: {
+          ...(f.metadata || {}),
+          invalidationReason: `memory_diff delete: ${keyword}`,
+          invalidationSource: 'memory_diff_delete',
+          invalidationSection: section,
+          invalidationKeyword: keyword,
+        },
+      })
+      invalidatedIds.add(f.id)
+      count++
+    }
+  }
+
+  if (count > 0) {
+    console.log(`[结构化记忆] memory_diff delete 触发失效 facts: ${count}`)
+  }
+  return count
+}
+
 function factIdentity(subject?: string, predicate?: string): string {
   return `${String(subject || '').trim()}|${String(predicate || '').trim()}`
 }
@@ -468,6 +613,7 @@ export async function runSecondaryMemoryUpdate(options: {
     let added = 0
     let updated = 0
     let invalidated = 0
+    let diffFactAdded = 0
 
     if (ops) {
       const episode: MemoryEpisode = {
@@ -492,6 +638,14 @@ export async function runSecondaryMemoryUpdate(options: {
     if (diff && diff.length > 0) {
       const patched = applyMemoryDiff(mem.memoryTable, diff as DiffOp[])
       saveMemory({ ...mem, memoryTable: patched, facts: [] })
+
+      try {
+        const deleted = await invalidateFactsFromMemoryDiffDelete(diff as DiffOp[], contactId)
+        if (!opsApplied) invalidated += deleted
+      } catch (invErr) {
+        console.warn('[结构化记忆] memory_diff delete 失效失败:', invErr)
+      }
+
       if (!opsApplied) {
         const episode: MemoryEpisode = {
           id: memoryId('episode'),
@@ -501,9 +655,25 @@ export async function runSecondaryMemoryUpdate(options: {
           source: 'secondary_model_memory_diff',
           createdAt: Date.now(),
           messageIds: [],
-          metadata: { rawDiff: diff },
+          metadata: {
+            rawDiff: diff,
+            oldMemoryLength: mem.memoryTable.length,
+            newMemoryLength: patched.length,
+          },
         }
         await saveMemoryEpisode(episode)
+        const facts = convertMemoryDiffToFacts(diff as DiffOp[], {
+          contactId,
+          subjectName: charName,
+          sourceEpisodeId: episode.id,
+        })
+        if (facts.length) {
+          await saveFacts(facts)
+          diffFactAdded = facts.length
+          console.log('[结构化记忆] memory_diff 旁路写入 facts:', diffFactAdded)
+        }
+      } else {
+        console.log('[结构化记忆] 已应用 memory_ops，本轮跳过 memory_diff 旁路 facts')
       }
     }
 
@@ -515,7 +685,9 @@ export async function runSecondaryMemoryUpdate(options: {
       ok: true,
       message: opsApplied
         ? `记忆已更新：+${added} / 更新 ${updated} / 失效 ${invalidated}`
-        : '记忆表已按 diff 更新',
+        : diffFactAdded > 0
+          ? `记忆表已更新，旁路写入 ${diffFactAdded} 条事实`
+          : '记忆表已按 diff 更新',
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : '未知错误'

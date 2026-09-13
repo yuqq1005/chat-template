@@ -23,12 +23,13 @@ export async function loadMessages(
   return rows
     .filter((m) => !m.pending)
     .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
-    .map(({ id, role, content, error, scene }) => ({
+    .map(({ id, role, content, error, scene, gameplay }) => ({
       id,
       role,
       content,
       ...(error ? { error: true } : {}),
       ...(scene ? { scene } : {}),
+      ...(gameplay ? { gameplay } : {}),
     }))
 }
 
@@ -38,12 +39,14 @@ export async function saveMessages(
 ): Promise<void> {
   const durable = messages.filter((m) => !m.pending && m.content)
   await idbClearByIndex(STORE.messages, 'contactId', contactId)
-  const rows: StoredMessage[] = durable.map((m, i) => ({
-    ...m,
-    pending: undefined,
-    contactId,
-    createdAt: Date.now() + i,
-  }))
+  const rows: StoredMessage[] = durable.map((m, i) => {
+    const { pending: _p, gameplayLoading: _gl, ...rest } = m
+    return {
+      ...rest,
+      contactId,
+      createdAt: Date.now() + i,
+    }
+  })
   await idbPutAll(STORE.messages, rows)
 }
 

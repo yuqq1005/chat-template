@@ -1,8 +1,11 @@
 import type { UiMessage } from '../types'
 import type { ReplyMode, SceneHeaderSettings } from '../utils/characterStorage'
 import { DEFAULT_SCENE_HEADER, DEFAULT_USER_AVATAR } from '../utils/characterStorage'
+import type { GameplaySettings } from '../utils/gameplayStorage'
+import { DEFAULT_GAMEPLAY } from '../utils/gameplayStorage'
 import { renderNarrationWithDialogueHighlight } from '../utils/narrationHighlight'
 import { sanitizeModelOutputForDisplay } from '../utils/sanitizeModelOutput'
+import { GameplayTabs } from './GameplayTabs'
 import { SceneMetaHeader } from './SceneMetaHeader'
 
 interface ChatBubbleProps {
@@ -13,6 +16,7 @@ interface ChatBubbleProps {
   userAvatar?: string
   replyMode?: ReplyMode
   sceneHeader?: SceneHeaderSettings
+  gameplaySettings?: GameplaySettings
   onUserAvatarClick?: () => void
   onPeerAvatarClick?: () => void
 }
@@ -25,6 +29,7 @@ export function ChatBubble({
   userAvatar = DEFAULT_USER_AVATAR,
   replyMode = 'im_bubble',
   sceneHeader = DEFAULT_SCENE_HEADER,
+  gameplaySettings = DEFAULT_GAMEPLAY,
   onUserAvatarClick,
   onPeerAvatarClick,
 }: ChatBubbleProps) {
@@ -38,6 +43,15 @@ export function ChatBubble({
   const sceneBlock =
     !isUser && message.scene ? (
       <SceneMetaHeader scene={message.scene} settings={sceneHeader} />
+    ) : null
+
+  const gameplayBlock =
+    !isUser && !message.pending && (message.gameplay || message.gameplayLoading) ? (
+      <GameplayTabs
+        gameplay={message.gameplay}
+        settings={gameplaySettings}
+        loading={message.gameplayLoading}
+      />
     ) : null
 
   if (narrativeLeft) {
@@ -64,6 +78,7 @@ export function ChatBubble({
             </p>
           )}
         </div>
+        {gameplayBlock}
       </div>
     )
   }
@@ -101,10 +116,10 @@ export function ChatBubble({
         {!isUser ? <div className="w-full">{sceneBlock}</div> : null}
         <div
           className={[
-            'rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed shadow-glass backdrop-blur-md',
+            'rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed shadow-glass',
             isUser
-              ? 'rounded-tr-md bg-[linear-gradient(135deg,rgba(124,92,255,0.85),rgba(91,140,255,0.75))] text-white'
-              : 'rounded-tl-md border border-white/10 bg-white/[0.08] text-mist-100',
+              ? 'rounded-tr-md border border-white/55 bg-white/12 text-white backdrop-blur-xl'
+              : 'rounded-tl-md border border-white/10 bg-white/[0.08] text-mist-100 backdrop-blur-md',
             message.error ? 'border border-red-400/40 bg-red-500/20' : '',
           ].join(' ')}
         >
@@ -118,6 +133,7 @@ export function ChatBubble({
             <p className="whitespace-pre-wrap break-words">{displayContent}</p>
           )}
         </div>
+        {!isUser ? gameplayBlock : null}
       </div>
     </div>
   )

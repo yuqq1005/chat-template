@@ -1,8 +1,13 @@
 import { useEffect, useRef, type RefObject } from 'react'
-import { HiOutlineChevronRight, HiOutlineCircleStack, HiOutlineSparkles } from 'react-icons/hi2'
+import {
+  HiOutlineChevronRight,
+  HiOutlineCircleStack,
+  HiOutlinePuzzlePiece,
+  HiOutlineSparkles,
+} from 'react-icons/hi2'
 import { anchorPopupStyle } from '../utils/shellLayout'
 
-export type SettingsPageId = 'character' | 'memory'
+export type SettingsPageId = 'character' | 'memory' | 'gameplay'
 
 interface SettingsMenuProps {
   open: boolean
@@ -28,6 +33,12 @@ const ITEMS: {
     title: '记忆',
     desc: '记忆表、长期事实、上下文轮数',
     icon: HiOutlineCircleStack,
+  },
+  {
+    id: 'gameplay',
+    title: '玩法',
+    desc: '状态、手机、社交、约定',
+    icon: HiOutlinePuzzlePiece,
   },
 ]
 

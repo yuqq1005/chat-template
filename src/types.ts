@@ -1,3 +1,5 @@
+import type { MessageGameplay } from './utils/gameplayMeta'
+
 export type MessageRole = 'user' | 'assistant' | 'system'
 
 /** 助手消息场景页眉（可选，不影响 content 正文） */
@@ -20,4 +22,8 @@ export interface UiMessage {
   error?: boolean
   /** 仅 assistant；展示在正文前 */
   scene?: MessageScene
+  /** 仅 assistant；剧情后二次生成的玩法面板 */
+  gameplay?: MessageGameplay
+  /** 玩法二次调用进行中（不落库） */
+  gameplayLoading?: boolean
 }
