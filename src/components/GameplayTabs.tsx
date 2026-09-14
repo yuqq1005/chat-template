@@ -3,7 +3,6 @@ import type { MessageGameplay } from '../utils/gameplayMeta'
 import { panelHasContent } from '../utils/gameplayMeta'
 import {
   enabledGameplayPanels,
-  GAMEPLAY_DECORATIONS,
   type GameplayPanelId,
   type GameplaySettings,
 } from '../utils/gameplayStorage'
@@ -57,6 +56,52 @@ function FieldBlock({ label, value }: { label: string; value?: string }) {
   )
 }
 
+interface ChatLine {
+  name: string
+  text: string
+}
+
+/** 解析「昵称：内容」多行；无法解析的行并入上一条或单独成行 */
+function parseChatLines(raw: string): ChatLine[] {
+  const lines = raw.replace(/\r\n/g, '\n').split('\n')
+  const out: ChatLine[] = []
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+    const m = trimmed.match(/^(.+?)[：:]\s*(.*)$/)
+    if (m) {
+      out.push({ name: m[1].trim(), text: m[2] })
+    } else if (out.length) {
+      out[out.length - 1].text = `${out[out.length - 1].text}\n${trimmed}`
+    } else {
+      out.push({ name: '', text: trimmed })
+    }
+  }
+  return out
+}
+
+function SocialChatBlock({ label, value }: { label: string; value?: string }) {
+  if (!value?.trim()) return null
+  const chats = parseChatLines(value)
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] font-medium tracking-wide text-white/45">{label}</p>
+      <div className="space-y-2.5">
+        {chats.map((c, i) => (
+          <div key={i} className="flex flex-col items-start gap-0.5">
+            {c.name ? (
+              <span className="px-1 text-[10px] text-white/40">{c.name}</span>
+            ) : null}
+            <div className="max-w-[92%] rounded-2xl rounded-tl-md border border-white/10 bg-white/[0.08] px-3 py-2 text-[13px] leading-relaxed text-white/90 shadow-glass backdrop-blur-md">
+              <p className="whitespace-pre-wrap break-words">{c.text || ' '}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function PanelBody({ id, data }: { id: GameplayPanelId; data: MessageGameplay }) {
   if (id === 'status' && data.status) {
     return (
@@ -78,9 +123,9 @@ function PanelBody({ id, data }: { id: GameplayPanelId; data: MessageGameplay })
   }
   if (id === 'social' && data.social) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         {SOCIAL_FIELDS.map((f) => (
-          <FieldBlock key={f.key} label={f.label} value={data.social?.[f.key]} />
+          <SocialChatBlock key={f.key} label={f.label} value={data.social?.[f.key]} />
         ))}
       </div>
     )
@@ -130,12 +175,6 @@ export function GameplayTabs({ gameplay, settings, loading }: GameplayTabsProps)
 
               {on && gameplay && panelHasContent(gameplay, id) ? (
                 <div className="w-full rounded-2xl border border-white/10 bg-black/35 px-3.5 py-3 shadow-glass backdrop-blur-md">
-                  <p className="mb-2 select-none text-center text-[11px] leading-relaxed tracking-wide text-white/35">
-                    {GAMEPLAY_DECORATIONS[id]}
-                  </p>
-                  <p className="mb-3 text-center text-[12px] font-medium text-white/70">
-                    {settings[id].label}
-                  </p>
                   <PanelBody id={id} data={gameplay} />
                 </div>
               ) : null}

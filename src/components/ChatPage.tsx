@@ -45,8 +45,10 @@ import {
 } from '../utils/sceneMeta'
 import { fetchGameplay } from '../utils/gameplayMeta'
 import {
+  GAMEPLAY_PANEL_ORDER,
   hasAnyGameplayEnabled,
   loadGameplay,
+  saveGameplay,
   type GameplaySettings,
 } from '../utils/gameplayStorage'
 import type { UiMessage } from '../types'
@@ -58,6 +60,7 @@ import { ChatHeader } from './ChatHeader'
 import { ChatInput } from './ChatInput'
 import { ConfirmClearIdbModal } from './ConfirmClearIdbModal'
 import { GameplaySettingsPage } from './GameplaySettingsPage'
+import { ExportSettingsPage } from './ExportSettingsPage'
 import { MemorySettingsPage } from './MemorySettingsPage'
 import { MessageList } from './MessageList'
 import { ModelSwitchModal } from './ModelSwitchModal'
@@ -199,6 +202,17 @@ export function ChatPage() {
     })
   }, [])
 
+  const handleGameplayEnabledChange = useCallback((enabled: boolean) => {
+    setGameplaySettings((prev) => {
+      const next = { ...prev }
+      for (const id of GAMEPLAY_PANEL_ORDER) {
+        next[id] = { ...next[id], enabled }
+      }
+      saveGameplay(next)
+      return next
+    })
+  }, [])
+
   const handleClearIdb = useCallback(async () => {
     setClearIdbBusy(true)
     closeOverlays()
@@ -301,8 +315,12 @@ export function ChatPage() {
       console.warn('[记忆检索] 失败，继续聊天:', e)
     }
 
+    const cfg = ConfigStorage.getApiConfig()
     const history: ChatMessage[] = [
-      ...buildCharacterSystemMessages(card),
+      ...buildCharacterSystemMessages(card, {
+        outputCharsMin: cfg.outputCharsMin,
+        outputCharsMax: cfg.outputCharsMax,
+      }),
       ...(factsBlock ? [{ role: 'system' as const, content: factsBlock }] : []),
       ...sliced.map((m) => ({
         role: m.role as 'user' | 'assistant',
@@ -311,7 +329,6 @@ export function ChatPage() {
       })),
     ]
 
-    const cfg = ConfigStorage.getApiConfig()
     const allowContinue = !card.freshMode
     const caller = new AiCaller({
       baseUrl: cfg.baseUrl,
@@ -579,11 +596,13 @@ export function ChatPage() {
         open={modeOpen}
         anchorRef={modeBtnRef}
         character={character}
+        gameplaySettings={gameplaySettings}
         onClose={() => setModeOpen(false)}
         onReplyModeChange={handleReplyModeChange}
         onFreshModeChange={handleFreshModeChange}
         onMemoryEngineChange={handleMemoryEngineChange}
         onSceneHeaderChange={handleSceneHeaderChange}
+        onGameplayEnabledChange={handleGameplayEnabledChange}
         onOpenOutputSettings={() => setSettingsPage('character')}
       />
 
@@ -629,6 +648,11 @@ export function ChatPage() {
         open={settingsPage === 'gameplay'}
         onBack={() => setSettingsPage(null)}
         onSaved={setGameplaySettings}
+      />
+
+      <ExportSettingsPage
+        open={settingsPage === 'export'}
+        onBack={() => setSettingsPage(null)}
       />
 
       <MessageList

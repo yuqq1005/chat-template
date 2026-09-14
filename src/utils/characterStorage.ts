@@ -85,7 +85,6 @@ export const DEFAULT_OUTPUT_FORMAT = `【输出模式】immersive_novel（沉浸
 4. 行动推进：一个明确动作（松手、捧脸、拉开距离、低头等）
 5. 收束：一句对白或一个未完成动作，把话头留给用户
 
-篇幅：约 400–700 字为宜，可弹性伸缩。
 【首要】段落与句子必须完整收束：禁止在句中、段中、引号未闭合处结束；不要把句子拆成单字，不要在汉字间插入特殊符号；宁可略短，也要写完再停。
 禁止：markdown、列表、标题、OOC、代用户发言、元评论、复述用户原句。`
 
@@ -224,29 +223,49 @@ function sanitizeCharacterAvatar(url: string | undefined | null): string {
   return url
 }
 
-/** 把旧版长度/硬性字数指引迁到当前契约 */
+/** 去掉 outputFormat 里旧的「篇幅：…」及元说明行，改由配置注入 */
+export function stripOutputFormatLengthLines(raw: string): string {
+  return raw
+    .replace(/^篇幅[：:].*$/gm, '')
+    .replace(/^篇幅指引.*$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+/** 把旧版长度/硬性字数指引迁到当前契约（并去掉写死区间，改走配置） */
 function migrateOutputFormatLength(raw: string): string {
   let next = raw
     .replace(
       /约\s*200\s*[–—\-]\s*450\s*汉字[；;]?\s*2\s*[–—\-]\s*5\s*个自然段/g,
-      '约 400–700 字为宜，可弹性伸缩',
+      '',
     )
     .replace(
       /约\s*400\s*[–—\-]\s*800\s*汉字[；;]?\s*3\s*[–—\-]\s*7\s*个自然段/g,
-      '约 400–700 字为宜，可弹性伸缩',
+      '',
     )
     .replace(
       /正文不少于约\s*550\s*汉字，目标\s*600[–—\-]\s*1000\s*汉字[；;]?\s*4\s*[–—\-]\s*8\s*个自然段/g,
-      '约 400–700 字为宜，可弹性伸缩',
+      '',
     )
     .replace(
       /长度硬性要求：正文不少于约\s*550\s*汉字，目标\s*600[–—\-]\s*1000\s*汉字/g,
-      '篇幅：约 400–700 字为宜，可弹性伸缩',
+      '',
     )
     .replace(/篇幅：约\s*400[–—\-]\s*800\s*汉字为佳，可弹性伸缩。?/g, '')
+    .replace(/篇幅：约\s*400[–—\-]\s*700\s*字为宜，可弹性伸缩。?/g, '')
     .replace(/【首要】必须完整输出每个自然段[\s\S]*?完整收束后再停。\n?/g, '')
     .replace(/未写满最低字数前不要结束。?/g, '')
-  return next.trim()
+  return stripOutputFormatLengthLines(next)
+}
+
+export function buildOutputLengthHint(charsMin: number, charsMax: number): string {
+  return `篇幅：约 ${charsMin}–${charsMax} 字为宜，可弹性伸缩。完整收束优先于凑字数。`
+}
+
+export interface BuildSystemPromptOptions {
+  /** 主剧情目标中文字数区间（来自 AppConfig） */
+  outputCharsMin?: number
+  outputCharsMax?: number
 }
 
 export function normalizeReplyMode(value: unknown): ReplyMode {
@@ -409,12 +428,17 @@ export function buildUserProfilePromptBlock(card: CharacterCard): string {
 /** 拼进主模型的 system 消息（小说模式仍用单条为主，不强行拆成 own 那种多段） */
 export function buildCharacterSystemMessages(
   card: CharacterCard,
+  options?: BuildSystemPromptOptions,
 ): Array<{ role: 'system'; content: string }> {
   const mode = normalizeReplyMode(card.replyMode)
   const name = card.name || '对方'
   const userBlock = buildUserProfilePromptBlock(card)
+  const charsMin = options?.outputCharsMin ?? 400
+  const charsMax = options?.outputCharsMax ?? 700
+  const lengthHint = buildOutputLengthHint(charsMin, charsMax)
 
   if (mode === 'immersive_novel') {
+    const formatBody = stripOutputFormatLengthLines(card.outputFormat.trim())
     const parts = [
       `你正在进行第二人称沉浸式角色扮演。你是"${name}"。`,
       card.personality.trim() && `【角色设定】\n${card.personality.trim()}`,
@@ -422,7 +446,8 @@ export function buildCharacterSystemMessages(
       userBlock,
       card.narrativeStyle.trim() && `【旁白文风】\n${card.narrativeStyle.trim()}`,
       card.speakingStyle.trim() && `【对白腔】\n${card.speakingStyle.trim()}`,
-      card.outputFormat.trim() && `【输出格式】\n${card.outputFormat.trim()}`,
+      formatBody && `【输出格式】\n${formatBody}`,
+      `【篇幅】\n${lengthHint}`,
       card.customPrompts.trim() && `【额外指令】\n${card.customPrompts.trim()}`,
       '前端会把用户消息显示在右侧气泡，你的整段回复（旁白+对白）显示在左侧叙事区；请只输出左侧那一整段，不要复述用户原话。',
     ].filter(Boolean)
@@ -437,15 +462,18 @@ export function buildCharacterSystemMessages(
     card.scenario.trim() && `【场景】\n${card.scenario.trim()}`,
     userBlock,
     card.customPrompts.trim() && `【额外指令】\n${card.customPrompts.trim()}`,
-    '用自然口语短句回复，像即时通讯气泡；不要长篇大论，不要使用 markdown。',
+    `用自然口语短句回复，像即时通讯气泡；单轮合计约 ${charsMin}–${charsMax} 字为宜，不要长篇大论，不要使用 markdown。`,
   ].filter(Boolean)
 
   return [{ role: 'system', content: bubbleParts.join('\n\n') }]
 }
 
 /** 兼容旧调用：拼成单条 system 文本 */
-export function buildCharacterSystemPrompt(card: CharacterCard): string {
-  return buildCharacterSystemMessages(card)
+export function buildCharacterSystemPrompt(
+  card: CharacterCard,
+  options?: BuildSystemPromptOptions,
+): string {
+  return buildCharacterSystemMessages(card, options)
     .map((m) => m.content)
     .join('\n\n')
 }

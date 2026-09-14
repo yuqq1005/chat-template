@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
   DEFAULT_GAMEPLAY,
-  GAMEPLAY_DECORATIONS,
   GAMEPLAY_PANEL_ORDER,
   loadGameplay,
   saveGameplay,
@@ -65,7 +64,7 @@ export function GameplaySettingsPage({ open, onBack, onSaved }: GameplaySettings
     >
       <div className="space-y-5">
         <p className="text-[11px] leading-relaxed text-white/40">
-          主模型只出剧情；启用的栏目会在消息下方出现 Tab，点开查看详细数据。栏目标题可改，花体装饰线固定。
+          主模型只出剧情；启用的栏目会在消息下方出现 Tab，点开查看详细数据。栏目标题可改，可自行加装饰。
         </p>
 
         {GAMEPLAY_PANEL_ORDER.map((id) => {
@@ -107,18 +106,11 @@ export function GameplaySettingsPage({ open, onBack, onSaved }: GameplaySettings
                 <FieldLabel>显示名称</FieldLabel>
                 <FieldInput
                   value={panel.label}
-                  maxLength={16}
+                  maxLength={32}
                   disabled={!panel.enabled}
                   onChange={(e) => patchPanel(id, { label: e.target.value })}
                   placeholder={DEFAULT_GAMEPLAY[id].label}
                 />
-              </div>
-
-              <div>
-                <FieldLabel>标题装饰（固定）</FieldLabel>
-                <p className="select-none rounded-xl border border-white/8 bg-black/30 px-2 py-2 text-center text-[11px] leading-relaxed text-white/40">
-                  {GAMEPLAY_DECORATIONS[id]}
-                </p>
               </div>
             </section>
           )

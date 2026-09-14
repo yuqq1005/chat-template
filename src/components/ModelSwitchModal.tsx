@@ -9,9 +9,14 @@ import {
 import {
   ConfigStorage,
   DEFAULT_CONFIG,
+  DEFAULT_OUTPUT_CHARS_MAX,
+  DEFAULT_OUTPUT_CHARS_MIN,
   MAX_MAX_TOKENS,
+  MAX_OUTPUT_CHARS,
   MIN_MAX_TOKENS,
+  MIN_OUTPUT_CHARS,
   normalizeMaxTokens,
+  normalizeOutputCharsRange,
   type AppConfig,
 } from '../utils/configStorage'
 import { fetchRemoteModels } from '../utils/fetchModels'
@@ -93,12 +98,14 @@ export function ModelSwitchModal({ open, onClose, onSaved }: ModelSwitchModalPro
   }
 
   const handleSave = () => {
+    const chars = normalizeOutputCharsRange(config.outputCharsMin, config.outputCharsMax)
     const next: AppConfig = {
       ...config,
       baseUrl: (config.baseUrl || provider.baseUrl).replace(/\/$/, ''),
       model: config.model.trim(),
       providerId: config.providerId || provider.id,
       maxTokens: normalizeMaxTokens(config.maxTokens),
+      ...chars,
     }
     if (!next.baseUrl) {
       setResult({ ok: false, message: '请填写 API Base URL' })
@@ -363,6 +370,50 @@ export function ModelSwitchModal({ open, onClose, onSaved }: ModelSwitchModalPro
             />
             <p className="text-[11px] leading-relaxed text-white/35">
               主剧情单次生成上限（{MIN_MAX_TOKENS}–{MAX_MAX_TOKENS}）。调大可减少截断。
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="text-white/50">目标中文字数</span>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  min={MIN_OUTPUT_CHARS}
+                  max={MAX_OUTPUT_CHARS}
+                  step={50}
+                  value={config.outputCharsMin}
+                  onChange={(e) => {
+                    const next = normalizeOutputCharsRange(
+                      e.target.value,
+                      config.outputCharsMax,
+                    )
+                    patch(next)
+                  }}
+                  className="w-16 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-right tabular-nums text-white/80 outline-none focus:border-[var(--accent-a)]/50"
+                />
+                <span className="text-white/35">–</span>
+                <input
+                  type="number"
+                  min={MIN_OUTPUT_CHARS}
+                  max={MAX_OUTPUT_CHARS}
+                  step={50}
+                  value={config.outputCharsMax}
+                  onChange={(e) => {
+                    const next = normalizeOutputCharsRange(
+                      config.outputCharsMin,
+                      e.target.value,
+                    )
+                    patch(next)
+                  }}
+                  className="w-16 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-right tabular-nums text-white/80 outline-none focus:border-[var(--accent-a)]/50"
+                />
+              </div>
+            </div>
+            <p className="text-[11px] leading-relaxed text-white/35">
+              写入主模型提示词「篇幅」（默认 {DEFAULT_OUTPUT_CHARS_MIN}–
+              {DEFAULT_OUTPUT_CHARS_MAX}）。这是软引导，不是硬截断；硬上限仍看上方
+              max_tokens。
             </p>
           </div>
 

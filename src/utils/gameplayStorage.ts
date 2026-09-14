@@ -1,23 +1,15 @@
-/** 玩法四栏：设置、固定花体线、面板 id */
+/** 玩法四栏：设置与面板 id */
 
 export type GameplayPanelId = 'status' | 'phone' | 'social' | 'promises'
 
 export interface GameplayPanelConfig {
   /** 是否参与二次生成 + 展示 Tab */
   enabled: boolean
-  /** 设置里可改的显示名 */
+  /** 设置里可改的显示名（可自行加装饰） */
   label: string
 }
 
 export type GameplaySettings = Record<GameplayPanelId, GameplayPanelConfig>
-
-/** 四栏各固定一套装饰（不交给模型即兴画） */
-export const GAMEPLAY_DECORATIONS: Record<GameplayPanelId, string> = {
-  status: '⊹ ───────── ʚ ɞ ───────── ⊹',
-  phone: '° ⑅ ⊹ ˖ ⋯ ˖ ⊹ ♡ ⊹ ˖ ⋯ ˖ ⊹ ⑅ °',
-  social: '。 ♡ · ° ʚ ∩⑅∩ ɞ ° · ♡ 。',
-  promises: '⊹ ── ─ ─ ୨ ♡ ୧ ─ ─ ── ⊹',
-}
 
 export const GAMEPLAY_PANEL_ORDER: GameplayPanelId[] = [
   'status',
@@ -42,7 +34,7 @@ function normalizePanel(
   const fallback = DEFAULT_GAMEPLAY[id]
   const label =
     typeof raw?.label === 'string' && raw.label.trim()
-      ? raw.label.trim().slice(0, 16)
+      ? raw.label.trim().slice(0, 32)
       : fallback.label
   return {
     enabled: raw?.enabled != null ? Boolean(raw.enabled) : fallback.enabled,

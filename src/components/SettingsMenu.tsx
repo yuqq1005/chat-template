@@ -1,5 +1,6 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import {
+  HiOutlineArrowDownTray,
   HiOutlineChevronRight,
   HiOutlineCircleStack,
   HiOutlinePuzzlePiece,
@@ -7,7 +8,7 @@ import {
 } from 'react-icons/hi2'
 import { anchorPopupStyle } from '../utils/shellLayout'
 
-export type SettingsPageId = 'character' | 'memory' | 'gameplay'
+export type SettingsPageId = 'character' | 'memory' | 'gameplay' | 'export'
 
 interface SettingsMenuProps {
   open: boolean
@@ -39,6 +40,12 @@ const ITEMS: {
     title: '玩法',
     desc: '状态、手机、社交、约定',
     icon: HiOutlinePuzzlePiece,
+  },
+  {
+    id: 'export',
+    title: '导出',
+    desc: '角色、文风、聊天记录 → Word',
+    icon: HiOutlineArrowDownTray,
   },
 ]
 

@@ -35,6 +35,7 @@
 | `src/utils/gameplayMeta.ts` | 剧情后串行二次调用 `<gameplay>` |
 | `src/utils/configStorage.ts` | API 配置 |
 | `src/utils/bgSettings.ts` | 背景 |
+| `src/utils/exportDocx.ts` | 导出角色/文风/聊天记录为 `.docx` |
 | `src/types.ts` | UI 消息类型 |
 
 ---
@@ -356,10 +357,13 @@ interface ApiConfig {
   temperature: number
   topP: number
   maxTokens: number   // 主剧情单次 max_tokens，默认 5000，可在「切换模型」改
+  /** 提示词「篇幅」软引导：约 N–M 字，默认 400–700；可在「切换模型」改 */
+  outputCharsMin: number
+  outputCharsMax: number
 }
 ```
 
-主模型聊天与副模型记忆整理共用同一套 API（副模型 temperature 更低，约 `0.1`）。
+主模型聊天与副模型记忆整理共用同一套 API（副模型 temperature 更低，约 `0.1`）。**max_tokens** 是 API 硬上限；**outputCharsMin/Max** 会注入 system 的 `【篇幅】`（小说）或气泡尾句，仅软引导。
 
 ### 2.4 背景 `kulan.chat.bg` → `BgSettings`
 
@@ -396,7 +400,26 @@ type GameplaySettings = Record<GameplayPanelId, GameplayPanelConfig>
 | `social` | 社交圈 | 群聊 / 私信 |
 | `promises` | 约定 | 待完成 / 已完成 |
 
-四栏各有**固定**花体装饰线（`GAMEPLAY_DECORATIONS`），不交给模型生成。
+四栏各有**固定**花体装饰线（`GAMEPLAY_DECORATIONS`，设置页预览用；聊天展开面板内不重复展示）。
+
+### 2.6 导出（仅导出，无导入）
+
+设置菜单 → **导出**。可选勾选：
+
+| 项 | 写入内容 |
+|----|----------|
+| 角色 | 姓名、人设、场景、开场白、用户侧（名字/性别/关系/人设） |
+| 文风 | replyMode、对白腔、旁白、outputFormat、额外指令 |
+| 聊天记录 | 按「开场 / 第 N 轮」小说体排版（见下） |
+
+**聊天记录版式：**
+- 文档标题「Chat 导出」；消息按时间序，不标「开场 / 第 N 轮」
+- 用户原文：「」+ 加粗，无背景高亮
+- 页眉：居中一行 `时间 · 地点 · 人物 · 天气`；评价为居中淡斜体（不写「页眉」标签）
+- 旁白正文：正常字号（导出首行缩进二字符；前端展示不缩进；段间空行在展示/导出时压缩）
+- 玩法：正文后〔状态〕〔手机〕等小附注，空字段不写
+
+生成 `.docx` 下载；不含 API Key、记忆库、背景。
 
 ---
 

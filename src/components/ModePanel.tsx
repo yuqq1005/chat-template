@@ -7,17 +7,33 @@ import {
   type CharacterCard,
   type ReplyMode,
 } from '../utils/characterStorage'
+import { hasAnyGameplayEnabled, type GameplaySettings } from '../utils/gameplayStorage'
 import { anchorPopupStyle } from '../utils/shellLayout'
+
+const GAMEPLAY_PANEL_OPTIONS: Array<{ value: boolean; label: string; hint: string }> = [
+  {
+    value: true,
+    label: '开启',
+    hint: '消息下显示四栏并生成',
+  },
+  {
+    value: false,
+    label: '关闭',
+    hint: '不显示、不请求玩法面板',
+  },
+]
 
 interface ModePanelProps {
   open: boolean
   anchorRef: RefObject<HTMLButtonElement | null>
   character: CharacterCard
+  gameplaySettings: GameplaySettings
   onClose: () => void
   onReplyModeChange: (mode: ReplyMode) => void
   onFreshModeChange: (enabled: boolean) => void
   onMemoryEngineChange: (enabled: boolean) => void
   onSceneHeaderChange: (enabled: boolean) => void
+  onGameplayEnabledChange: (enabled: boolean) => void
   onOpenOutputSettings: () => void
 }
 
@@ -25,11 +41,13 @@ export function ModePanel({
   open,
   anchorRef,
   character,
+  gameplaySettings,
   onClose,
   onReplyModeChange,
   onFreshModeChange,
   onMemoryEngineChange,
   onSceneHeaderChange,
+  onGameplayEnabledChange,
   onOpenOutputSettings,
 }: ModePanelProps) {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -57,6 +75,7 @@ export function ModePanel({
 
   const rect = anchorRef.current?.getBoundingClientRect()
   const { top, left } = anchorPopupStyle(rect, { panelWidth: 320 })
+  const gameplayOn = hasAnyGameplayEnabled(gameplaySettings)
 
   return (
     <div
@@ -152,6 +171,39 @@ export function ModePanel({
                 key={String(opt.value)}
                 type="button"
                 onClick={() => onSceneHeaderChange(opt.value)}
+                className={[
+                  'rounded-xl border px-2.5 py-2 text-left transition',
+                  active
+                    ? opt.value
+                      ? 'border-[var(--accent-a)]/55 bg-[var(--accent-a)]/15 text-white'
+                      : 'border-white/20 bg-white/8 text-white/80'
+                    : 'border-white/10 bg-black/25 text-white/65 hover:bg-white/5',
+                ].join(' ')}
+              >
+                <span className="block text-[13px] font-medium">{opt.label}</span>
+                <span className="mt-0.5 block text-[10px] leading-snug text-white/40">
+                  {opt.hint}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      <div className="my-3 h-px bg-white/10" />
+
+      <section className="space-y-2">
+        <h2 className="px-0.5 text-[11px] font-medium tracking-wide text-white/45">
+          玩法面板
+        </h2>
+        <div className="grid grid-cols-2 gap-1.5">
+          {GAMEPLAY_PANEL_OPTIONS.map((opt) => {
+            const active = gameplayOn === opt.value
+            return (
+              <button
+                key={String(opt.value)}
+                type="button"
+                onClick={() => onGameplayEnabledChange(opt.value)}
                 className={[
                   'rounded-xl border px-2.5 py-2 text-left transition',
                   active

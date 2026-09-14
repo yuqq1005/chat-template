@@ -43,21 +43,30 @@ export function MessageList({
           replyMode === 'immersive_novel' ? 'gap-6' : 'gap-5',
         ].join(' ')}
       >
-        {messages.map((msg) => (
-          <ChatBubble
-            key={msg.id}
-            message={msg}
-            peerAvatar={peerAvatar}
-            peerName={peerName}
-            userName={userName}
-            userAvatar={userAvatar}
-            replyMode={replyMode}
-            sceneHeader={sceneHeader}
-            gameplaySettings={gameplaySettings}
-            onUserAvatarClick={onUserAvatarClick}
-            onPeerAvatarClick={onPeerAvatarClick}
-          />
-        ))}
+        {messages.map((msg, index) => {
+          const turnIndex =
+            msg.role === 'user'
+              ? messages
+                  .slice(0, index + 1)
+                  .filter((m) => m.role === 'user').length
+              : undefined
+          return (
+            <ChatBubble
+              key={msg.id}
+              message={msg}
+              peerAvatar={peerAvatar}
+              peerName={peerName}
+              userName={userName}
+              userAvatar={userAvatar}
+              replyMode={replyMode}
+              sceneHeader={sceneHeader}
+              gameplaySettings={gameplaySettings}
+              turnIndex={turnIndex}
+              onUserAvatarClick={onUserAvatarClick}
+              onPeerAvatarClick={onPeerAvatarClick}
+            />
+          )
+        })}
         <div ref={bottomRef} />
       </div>
     </div>

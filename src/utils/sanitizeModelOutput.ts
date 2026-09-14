@@ -1,11 +1,14 @@
 /**
- * 仅用于前端展示：去掉模型偶发夹在字间的修饰符。
+ * 仅用于前端展示：去掉模型偶发夹在字间的修饰符，并压缩段间空行。
  * 存储 / 发给模型的上下文请保留原文，不要在入库前调用。
  * 例：贺ˡ之ˡ炀 → 贺之炀（U+02E1）
  */
 export function sanitizeModelOutputForDisplay(text: string): string {
   if (!text) return text
-  return text.replace(/\u02E1/g, '')
+  return text
+    .replace(/\u02E1/g, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{2,}/g, '\n')
 }
 
 /** @deprecated 使用 sanitizeModelOutputForDisplay；勿在入库路径调用 */
