@@ -1,6 +1,6 @@
 /** 独立音乐库：清聊天（KulanChatDB）时保留歌单 */
 
-import defaultAfroJazzUrl from '../music/你是怎样的一个人 - Afro Jazz (耳目一新).mp3'
+import defaultAfroJazzUrl from '../music/default-afro-jazz.mp3'
 
 const DB_NAME = 'KulanMusicDB'
 const DB_VERSION = 1

@@ -6,6 +6,7 @@ import {
   type GameplayPanelId,
   type GameplaySettings,
 } from '../utils/gameplayStorage'
+import './GameplayTabs.css'
 
 interface GameplayTabsProps {
   gameplay?: MessageGameplay
@@ -44,14 +45,35 @@ const PROMISE_FIELDS: Array<{
   { key: 'done', label: '已完成' },
 ]
 
+const PANEL_META: Record<GameplayPanelId, { mark: string; ornament: string }> = {
+  status: { mark: 'ÉTAT', ornament: 'journal' },
+  phone: { mark: 'MÉMOIRE', ornament: 'téléphone' },
+  social: { mark: 'CERCLE', ornament: 'social' },
+  promises: { mark: 'PROMESSE', ornament: 'souvenir' },
+}
+
+/** 模型常把多行写成「a / b / c」，统一成换行再渲染 */
+function normalizeMultiline(raw: string): string {
+  const s = raw.replace(/\r\n/g, '\n').trim()
+  if (!s) return s
+  if (s.includes('\n')) return s
+  if (/\s*[/／|｜]\s*/.test(s)) {
+    return s
+      .split(/\s*[/／|｜]\s*/)
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .join('\n')
+  }
+  return s
+}
+
 function FieldBlock({ label, value }: { label: string; value?: string }) {
   if (!value?.trim()) return null
+  const text = normalizeMultiline(value)
   return (
-    <div className="space-y-1">
-      <p className="text-[11px] font-medium tracking-wide text-white/45">{label}</p>
-      <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-white/85">
-        {value}
-      </p>
+    <div className="gp-field">
+      <span className="gp-field-label">{label}</span>
+      <p className="gp-field-value">{text}</p>
     </div>
   )
 }
@@ -63,16 +85,17 @@ interface ChatLine {
 
 /** 解析「昵称：内容」多行；无法解析的行并入上一条或单独成行 */
 function parseChatLines(raw: string): ChatLine[] {
-  const lines = raw.replace(/\r\n/g, '\n').split('\n')
+  const normalized = normalizeMultiline(raw)
+  const lines = normalized.split('\n')
   const out: ChatLine[] = []
   for (const line of lines) {
     const trimmed = line.trim()
     if (!trimmed) continue
-    const m = trimmed.match(/^(.+?)[：:]\s*(.*)$/)
-    if (m) {
-      out.push({ name: m[1].trim(), text: m[2] })
+    const m = trimmed.match(/^(.{1,12}?)[：:]\s*(.+)$/)
+    if (m && m[2]?.trim()) {
+      out.push({ name: m[1]!.trim(), text: m[2].trim() })
     } else if (out.length) {
-      out[out.length - 1].text = `${out[out.length - 1].text}\n${trimmed}`
+      out[out.length - 1]!.text = `${out[out.length - 1]!.text}\n${trimmed}`
     } else {
       out.push({ name: '', text: trimmed })
     }
@@ -83,17 +106,16 @@ function parseChatLines(raw: string): ChatLine[] {
 function SocialChatBlock({ label, value }: { label: string; value?: string }) {
   if (!value?.trim()) return null
   const chats = parseChatLines(value)
+  if (!chats.length) return null
   return (
-    <div className="space-y-2">
-      <p className="text-[11px] font-medium tracking-wide text-white/45">{label}</p>
-      <div className="space-y-2.5">
+    <div className="gp-social-block">
+      <span className="gp-field-label">{label}</span>
+      <div className="gp-chat-list">
         {chats.map((c, i) => (
-          <div key={i} className="flex flex-col items-start gap-0.5">
-            {c.name ? (
-              <span className="px-1 text-[10px] text-white/40">{c.name}</span>
-            ) : null}
-            <div className="max-w-[92%] rounded-2xl rounded-tl-md border border-white/10 bg-white/[0.08] px-3 py-2 text-[13px] leading-relaxed text-white/90 shadow-glass backdrop-blur-md">
-              <p className="whitespace-pre-wrap break-words">{c.text || ' '}</p>
+          <div key={i} className="gp-chat-item">
+            {c.name ? <span className="gp-chat-name">{c.name}</span> : null}
+            <div className="gp-chat-bubble">
+              <p>{c.text || ' '}</p>
             </div>
           </div>
         ))}
@@ -105,7 +127,7 @@ function SocialChatBlock({ label, value }: { label: string; value?: string }) {
 function PanelBody({ id, data }: { id: GameplayPanelId; data: MessageGameplay }) {
   if (id === 'status' && data.status) {
     return (
-      <div className="space-y-3">
+      <div className="gp-fields">
         {STATUS_FIELDS.map((f) => (
           <FieldBlock key={f.key} label={f.label} value={data.status?.[f.key]} />
         ))}
@@ -114,7 +136,7 @@ function PanelBody({ id, data }: { id: GameplayPanelId; data: MessageGameplay })
   }
   if (id === 'phone' && data.phone) {
     return (
-      <div className="space-y-3">
+      <div className="gp-fields">
         {PHONE_FIELDS.map((f) => (
           <FieldBlock key={f.key} label={f.label} value={data.phone?.[f.key]} />
         ))}
@@ -123,7 +145,7 @@ function PanelBody({ id, data }: { id: GameplayPanelId; data: MessageGameplay })
   }
   if (id === 'social' && data.social) {
     return (
-      <div className="space-y-4">
+      <div className="gp-social">
         {SOCIAL_FIELDS.map((f) => (
           <SocialChatBlock key={f.key} label={f.label} value={data.social?.[f.key]} />
         ))}
@@ -132,14 +154,14 @@ function PanelBody({ id, data }: { id: GameplayPanelId; data: MessageGameplay })
   }
   if (id === 'promises' && data.promises) {
     return (
-      <div className="space-y-3">
+      <div className="gp-fields">
         {PROMISE_FIELDS.map((f) => (
           <FieldBlock key={f.key} label={f.label} value={data.promises?.[f.key]} />
         ))}
       </div>
     )
   }
-  return <p className="text-[12px] text-white/40">暂无内容</p>
+  return <p className="gp-empty">暂无内容</p>
 }
 
 export function GameplayTabs({ gameplay, settings, loading }: GameplayTabsProps) {
@@ -152,30 +174,41 @@ export function GameplayTabs({ gameplay, settings, loading }: GameplayTabsProps)
   const openId = active && tabs.includes(active) ? active : null
 
   return (
-    <div className="mt-3 w-full max-w-full space-y-2">
-      <div className="flex w-full flex-col items-center gap-1">
+    <div className="gp-tabs mt-3 w-full max-w-full space-y-2">
+      <div className="gp-tabs-list">
         {tabs.map((id) => {
           const on = openId === id
           const ready = panelHasContent(gameplay, id)
+          const meta = PANEL_META[id]
           return (
-            <div key={id} className="flex w-full flex-col items-center gap-2">
+            <div key={id} className="gp-tab-row">
               <button
                 type="button"
                 disabled={loading && !ready}
                 onClick={() => setActive((prev) => (prev === id ? null : id))}
                 className={[
-                  'bg-transparent px-0 py-0.5 text-center text-[12px] transition',
-                  on ? 'text-white' : 'text-white/55 hover:text-white/85',
+                  'gp-tab-btn',
+                  on ? 'is-on' : '',
                   loading && !ready ? 'opacity-50' : '',
-                ].join(' ')}
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
               >
                 {settings[id].label}
                 {loading && !ready ? '…' : ''}
               </button>
 
               {on && gameplay && panelHasContent(gameplay, id) ? (
-                <div className="w-full rounded-2xl border border-white/10 bg-black/35 px-3.5 py-3 shadow-glass backdrop-blur-md">
-                  <PanelBody id={id} data={gameplay} />
+                <div className="gp-panel" data-panel={id}>
+                  <span className="gp-panel-mark" aria-hidden>
+                    {meta.mark}
+                  </span>
+                  <div className="gp-panel-inner">
+                    <div className="gp-panel-ornament">
+                      <span>{meta.ornament}</span>
+                    </div>
+                    <PanelBody id={id} data={gameplay} />
+                  </div>
                 </div>
               ) : null}
             </div>
@@ -183,9 +216,7 @@ export function GameplayTabs({ gameplay, settings, loading }: GameplayTabsProps)
         })}
       </div>
 
-      {loading && !gameplay ? (
-        <p className="text-center text-[11px] text-white/35">玩法面板生成中…</p>
-      ) : null}
+      {loading && !gameplay ? <p className="gp-loading">玩法面板生成中…</p> : null}
     </div>
   )
 }

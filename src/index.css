@@ -29,6 +29,14 @@ body,
   -webkit-font-smoothing: antialiased;
 }
 
+/* 旁白叙事：霞鹜文楷，偏文学阅读感 */
+.narration-prose {
+  font-family: 'LXGW WenKai', 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-rendering: optimizeLegibility;
+}
+
 /* PC：外层居中；手机壳限制宽度 */
 .app-shell-host {
   width: 100%;

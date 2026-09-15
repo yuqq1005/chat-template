@@ -114,7 +114,7 @@ function buildGameplaySystemPrompt(enabled: GameplayPanelId[]): string {
       '    <action>此刻动作/姿态，一两句</action>',
       '    <mood>心情；可带简短颜文字</mood>',
       '    <inner_os>第一人称内心 OS，一两句</inner_os>',
-      '    <affection>好感描述，如 12% 或 65→68[+3] 及一句理由</affection>',
+      '    <affection>好感变化。格式如 45% 或 45→48[+3] 及一句短理由。起点默认约 40%–50%（暧昧/克制期，常见写 45% 左右）；未有重大突破时禁止开局就 70%+。越界后可短暂上冲再立刻回落，回落要干脆。单轮涨跌一般 ±1～±5。</affection>',
       '    <about_you>角色此刻对用户的看法，一两句</about_you>',
       '  </status>',
     )
@@ -122,8 +122,8 @@ function buildGameplaySystemPrompt(enabled: GameplayPanelId[]): string {
   if (enabled.includes('phone')) {
     lines.push(
       '  <phone>',
-      '    <notices>手机通知，可多行；如[微信]… / [天气]…</notices>',
-      '    <notes>便签待办，可多行</notes>',
+      '    <notices>手机通知，每条一行；如[微信]…；不要用 / 拼接</notices>',
+      '    <notes>便签待办，每条一行</notes>',
       '    <searches>搜索记录，每行：关键词（括号短评）</searches>',
       '  </phone>',
     )
@@ -131,8 +131,8 @@ function buildGameplaySystemPrompt(enabled: GameplayPanelId[]): string {
   if (enabled.includes('social')) {
     lines.push(
       '  <social>',
-      '    <group_chat>好友群聊摘录，多行「昵称：内容」；角色可有一句简短回复</group_chat>',
-      '    <dm>可选私信一两行；没有则写无</dm>',
+      '    <group_chat>好友群聊摘录。每条独占一行，格式「昵称：内容」；角色可有一句简短回复。禁止用 / 把多条拼成一行。</group_chat>',
+      '    <dm>可选私信。每条一行「昵称：内容」；没有则写无</dm>',
       '  </social>',
     )
   }

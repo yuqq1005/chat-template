@@ -18,7 +18,7 @@ export function renderNarrationWithDialogueHighlight(text: string): ReactNode[] 
   while ((match = re.exec(text)) !== null) {
     if (match.index > last) {
       nodes.push(
-        <span key={`n-${last}`} className="text-white">
+        <span key={`n-${last}`} className="text-white/[0.92]">
           {text.slice(last, match.index)}
         </span>,
       )
@@ -26,7 +26,7 @@ export function renderNarrationWithDialogueHighlight(text: string): ReactNode[] 
     nodes.push(
       <mark
         key={`d-${match.index}`}
-        className="rounded-[2px] bg-white/25 px-0.5 text-white box-decoration-clone [box-shadow:inset_0_-0.1em_0_rgba(255,255,255,0.35)]"
+        className="rounded-[2px] bg-white/20 px-0.5 text-white box-decoration-clone [box-shadow:inset_0_-0.12em_0_rgba(255,255,255,0.28)]"
       >
         {match[0]}
       </mark>,
@@ -36,7 +36,7 @@ export function renderNarrationWithDialogueHighlight(text: string): ReactNode[] 
 
   if (last < text.length) {
     nodes.push(
-      <span key={`n-${last}`} className="text-white">
+      <span key={`n-${last}`} className="text-white/[0.92]">
         {text.slice(last)}
       </span>,
     )

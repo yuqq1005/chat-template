@@ -142,6 +142,7 @@ export function ChatPage() {
       {
         id: uid(),
         role: 'assistant',
+        intro: true,
         content: greeting,
         ...(scene ? { scene } : {}),
       },
@@ -659,6 +660,7 @@ export function ChatPage() {
         messages={messages}
         peerAvatar={peerAvatar}
         peerName={peerName}
+        personality={character.personality}
         userName={userName}
         userAvatar={userAvatar}
         replyMode={character.replyMode}

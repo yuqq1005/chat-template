@@ -16,7 +16,7 @@ interface CharacterProfileModalProps {
 
 export function CharacterProfileModal({ open, onClose, onSaved }: CharacterProfileModalProps) {
   const fileRef = useRef<HTMLInputElement>(null)
-  const [name, setName] = useState('贺之炀')
+  const [name, setName] = useState('陆珩')
   const [avatar, setAvatar] = useState(DEFAULT_CHARACTER_AVATAR)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -24,7 +24,7 @@ export function CharacterProfileModal({ open, onClose, onSaved }: CharacterProfi
   useEffect(() => {
     if (!open) return
     const card = loadCharacter()
-    setName(card.name || '贺之炀')
+    setName(card.name || '陆珩')
     setAvatar(card.avatar || DEFAULT_CHARACTER_AVATAR)
     setError(null)
     setBusy(false)
@@ -60,7 +60,7 @@ export function CharacterProfileModal({ open, onClose, onSaved }: CharacterProfi
     const card = loadCharacter()
     const next: CharacterCard = {
       ...card,
-      name: name.trim() || '贺之炀',
+      name: name.trim() || '陆珩',
       avatar: avatar || DEFAULT_CHARACTER_AVATAR,
     }
     saveCharacter(next)
@@ -145,7 +145,7 @@ export function CharacterProfileModal({ open, onClose, onSaved }: CharacterProfi
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="贺之炀"
+              placeholder="陆珩"
               maxLength={32}
               className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-[var(--accent-a)]/50"
             />

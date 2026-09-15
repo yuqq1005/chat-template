@@ -91,36 +91,32 @@ export function ChatBubble({
     </div>
   )
 
-  /** 旁白+玩法：左侧头像/名字 + 无气泡叙事墙 */
+  /** 旁白+玩法：无头像/名字，全宽叙事墙 */
   if (narrativeLeft) {
     return (
-      <div className="bubble-enter flex w-full gap-2.5 pr-2 sm:pr-10">
-        {avatarColumn}
-        <div className="flex min-w-0 flex-1 flex-col gap-1 items-start">
-          <span className="px-1 text-[11px] text-white/40">{peerName}</span>
-          {sceneBlock}
-          <div
-            className={[
-              'w-full text-[15px] leading-[1.75]',
-              message.error ? 'text-red-300/90' : '',
-            ].join(' ')}
-          >
-            {message.pending && !message.content ? (
-              <span className="inline-flex items-center gap-1.5 py-1">
-                <span className="typing-dot size-1.5 rounded-full bg-white/55" />
-                <span className="typing-dot size-1.5 rounded-full bg-white/55" />
-                <span className="typing-dot size-1.5 rounded-full bg-white/55" />
-              </span>
-            ) : (
-              <p className="whitespace-pre-wrap break-words">
-                {message.error
-                  ? displayContent
-                  : renderNarrationWithDialogueHighlight(displayContent)}
-              </p>
-            )}
-          </div>
-          {gameplayBlock}
+      <div className="bubble-enter flex w-full flex-col gap-1 pr-1 sm:pr-6">
+        {sceneBlock}
+        <div
+          className={[
+            'narration-prose w-full text-[14px] leading-[1.85]',
+            message.error ? 'text-red-300/90' : '',
+          ].join(' ')}
+        >
+          {message.pending && !message.content ? (
+            <span className="inline-flex items-center gap-1.5 py-1">
+              <span className="typing-dot size-1.5 rounded-full bg-white/55" />
+              <span className="typing-dot size-1.5 rounded-full bg-white/55" />
+              <span className="typing-dot size-1.5 rounded-full bg-white/55" />
+            </span>
+          ) : (
+            <p className="whitespace-pre-wrap break-words">
+              {message.error
+                ? displayContent
+                : renderNarrationWithDialogueHighlight(displayContent)}
+            </p>
+          )}
         </div>
+        {gameplayBlock}
       </div>
     )
   }

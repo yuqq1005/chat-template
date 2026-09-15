@@ -221,7 +221,7 @@ export function CharacterSettingsPage({ open, onBack, onSaved }: CharacterSettin
             <FieldInput
               value={draft.name}
               onChange={(e) => patch({ name: e.target.value })}
-              placeholder="贺之炀"
+              placeholder="陆珩"
             />
           </label>
 
@@ -592,7 +592,7 @@ export function CharacterSettingsPage({ open, onBack, onSaved }: CharacterSettin
               <FieldInput
                 value={draft.userRelationship}
                 onChange={(e) => patch({ userRelationship: e.target.value })}
-                placeholder="老板与投资品、暧昧、朋友…"
+                placeholder="表妹、一起长大、暧昧…"
               />
             </label>
 

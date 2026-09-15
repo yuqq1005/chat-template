@@ -20,6 +20,8 @@ export interface UiMessage {
   content: string
   pending?: boolean
   error?: boolean
+  /** 开场白：正文前展示杂志风角色介绍 */
+  intro?: boolean
   /** 仅 assistant；展示在正文前 */
   scene?: MessageScene
   /** 仅 assistant；剧情后二次生成的玩法面板 */

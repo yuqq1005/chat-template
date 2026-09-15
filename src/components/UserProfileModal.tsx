@@ -182,7 +182,7 @@ export function UserProfileModal({ open, onClose, onSaved }: UserProfileModalPro
                 <input
                   value={relationship}
                   onChange={(e) => setRelationship(e.target.value)}
-                  placeholder="暧昧、老板…"
+                  placeholder="表妹、一起长大…"
                   maxLength={64}
                   className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-[var(--accent-a)]/50"
                 />
@@ -192,7 +192,7 @@ export function UserProfileModal({ open, onClose, onSaved }: UserProfileModalPro
                 <textarea
                   value={persona}
                   onChange={(e) => setPersona(e.target.value)}
-                  placeholder="随和、不讲究…"
+                  placeholder="怕黑、偏爱安静…"
                   rows={3}
                   className="w-full resize-none rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-[var(--accent-a)]/50"
                 />

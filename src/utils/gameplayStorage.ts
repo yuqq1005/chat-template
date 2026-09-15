@@ -19,10 +19,10 @@ export const GAMEPLAY_PANEL_ORDER: GameplayPanelId[] = [
 ]
 
 export const DEFAULT_GAMEPLAY: GameplaySettings = {
-  status: { enabled: true, label: '状态面板' },
-  phone: { enabled: true, label: '手机动态' },
-  social: { enabled: true, label: '社交圈' },
-  promises: { enabled: true, label: '约定' },
+  status: { enabled: true, label: '˚⊹ Fragment d\'ange · Journal d\'état ⊹˚' },
+  phone: { enabled: true, label: '˚✧ Le thème principal de l\'amour · Mémoire téléphonique ✧˚' },
+  social: { enabled: true, label: '⋆˖ Tout est à propos de toi · Cercle social ˖⋆' },
+  promises: { enabled: true, label: '˚⋆ Archive des promesses · Souvenir d\'amour ⋆˚' },
 }
 
 const STORAGE_KEY = 'kulan.chat.gameplay'

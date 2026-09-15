@@ -98,10 +98,10 @@ export function buildMessageScene(
 export function createGreetingScene(characterName: string): MessageScene {
   return {
     time: randomStoryTimeIso(),
-    location: '便利店门口',
-    people: `${characterName || '贺之炀'}、你`,
-    weather: '晚风微凉，路灯把柏油路照成浅黄',
-    godComment: '确认关系后的第一秒，空气比合同还紧。',
+    location: '家中客厅·玄关',
+    people: `${characterName || '陆珩'}、你`,
+    weather: '傍晚天色沉成灰蓝，落地灯暖着一小块客厅',
+    godComment: '一封情书轻轻落下，十年表哥分寸裂开一道缝。',
   }
 }
 
@@ -134,7 +134,7 @@ function buildSceneMetaSystemPrompt(settings: SceneHeaderSettings): string {
   }
   if (settings.fields.godComment) {
     lines.push(
-      '  <god_comment>10-30字，上帝视角，带暧昧感的吐槽或幽默，贴合当下</god_comment>',
+      '  <god_comment>10-30字，上帝视角，含蓄克制、略带怅然，点到即止，贴合当下；勿油腻吐槽、勿合同/投资品隐喻</god_comment>',
     )
   }
   lines.push('</scene_meta>')

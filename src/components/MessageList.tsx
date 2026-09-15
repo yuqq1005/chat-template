@@ -2,12 +2,14 @@ import { useEffect, useRef } from 'react'
 import type { UiMessage } from '../types'
 import type { ReplyMode, SceneHeaderSettings } from '../utils/characterStorage'
 import type { GameplaySettings } from '../utils/gameplayStorage'
+import { CharacterIntroCard } from './CharacterIntroCard'
 import { ChatBubble } from './ChatBubble'
 
 interface MessageListProps {
   messages: UiMessage[]
   peerAvatar: string
   peerName: string
+  personality?: string
   userName?: string
   userAvatar?: string
   replyMode?: ReplyMode
@@ -21,6 +23,7 @@ export function MessageList({
   messages,
   peerAvatar,
   peerName,
+  personality,
   userName,
   userAvatar,
   replyMode,
@@ -32,8 +35,14 @@ export function MessageList({
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    const onlyGreeting = messages.length === 1 && messages[0]?.role === 'assistant'
+    if (onlyGreeting) return
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  const showIntro =
+    messages.some((m) => m.intro) ||
+    (messages[0]?.role === 'assistant' && Boolean(messages[0]?.content))
 
   return (
     <div className="no-scrollbar relative z-10 flex-1 overflow-y-auto px-4 py-5">
@@ -43,6 +52,13 @@ export function MessageList({
           replyMode === 'immersive_novel' ? 'gap-6' : 'gap-5',
         ].join(' ')}
       >
+        {showIntro ? (
+          <CharacterIntroCard
+            name={peerName}
+            avatar={peerAvatar}
+            personality={personality ?? ''}
+          />
+        ) : null}
         {messages.map((msg, index) => {
           const turnIndex =
             msg.role === 'user'

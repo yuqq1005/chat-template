@@ -1,65 +1,121 @@
 import type { MessageScene } from '../types'
 import type { SceneHeaderSettings } from '../utils/characterStorage'
-import { formatStoryTime } from '../utils/sceneMeta'
+import './SceneMetaHeader.css'
 
 interface SceneMetaHeaderProps {
   scene: MessageScene
   settings: SceneHeaderSettings
 }
 
-/** 助手正文前的玻璃质感场景页眉（非紫色） */
+const WEEKDAYS = [
+  'SUNDAY',
+  'MONDAY',
+  'TUESDAY',
+  'WEDNESDAY',
+  'THURSDAY',
+  'FRIDAY',
+  'SATURDAY',
+] as const
+
+function parseSceneClock(iso: string): {
+  hour: string
+  minute: string
+  dateText: string
+  weekday: string
+} | null {
+  const d = new Date(iso)
+  if (!Number.isFinite(d.getTime())) return null
+  const h = String(d.getHours()).padStart(2, '0')
+  const mi = String(d.getMinutes()).padStart(2, '0')
+  const y = d.getFullYear()
+  const mo = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return {
+    hour: h,
+    minute: mi,
+    dateText: `${y}.${mo}.${day}`,
+    weekday: WEEKDAYS[d.getDay()] ?? '',
+  }
+}
+
+function splitLocation(raw: string): { main: string; sub?: string } {
+  const text = raw.trim()
+  const parts = text.split(/[·•｜|／/]/).map((s) => s.trim()).filter(Boolean)
+  if (parts.length >= 2) {
+    return { main: parts[0]!, sub: parts.slice(1).join(' · ') }
+  }
+  return { main: text }
+}
+
+/** 电影感场景页眉：左时间 / 右地点，ghost-box 标签 */
 export function SceneMetaHeader({ scene, settings }: SceneMetaHeaderProps) {
   if (!settings.enabled) return null
 
   const f = settings.fields
-  const rows: Array<{ key: string; label: string; value: string }> = []
-
-  if (f.time && scene.time) {
-    rows.push({ key: 'time', label: '时间', value: formatStoryTime(scene.time) })
-  }
-  if (f.location && scene.location?.trim()) {
-    rows.push({ key: 'location', label: '地点', value: scene.location.trim() })
-  }
-  if (f.people && scene.people?.trim()) {
-    rows.push({ key: 'people', label: '现场', value: scene.people.trim() })
-  }
-  if (f.weather && scene.weather?.trim()) {
-    rows.push({ key: 'weather', label: '氛围', value: scene.weather.trim() })
-  }
-
+  const clock = f.time && scene.time ? parseSceneClock(scene.time) : null
+  const locationRaw =
+    f.location && scene.location?.trim() ? scene.location.trim() : ''
+  const location = locationRaw ? splitLocation(locationRaw) : null
+  const people = f.people && scene.people?.trim() ? scene.people.trim() : ''
+  const weather =
+    f.weather && scene.weather?.trim() ? scene.weather.trim() : ''
   const comment =
     f.godComment && scene.godComment?.trim() ? scene.godComment.trim() : ''
 
-  if (!rows.length && !comment) return null
+  if (!clock && !location && !people && !weather && !comment) return null
 
   return (
-    <div
-      className="mb-2.5 overflow-hidden rounded-2xl border border-white/12 bg-white/[0.06] px-3.5 py-2.5 shadow-glass backdrop-blur-xl"
-      style={{
-        backgroundImage:
-          'linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02) 45%, rgba(180,200,220,0.06))',
-      }}
-    >
-      {rows.length > 0 && (
-        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] leading-relaxed text-white/55">
-          {rows.map((row) => (
-            <span key={row.key} className="inline-flex min-w-0 items-baseline gap-1">
-              <span className="shrink-0 text-white/35">{row.label}</span>
-              <span className="text-white/80">{row.value}</span>
-            </span>
-          ))}
+    <div className="scene-meta" aria-label="场景信息">
+      <div className="scene-meta-watermark" aria-hidden>
+        SCENE ARCHIVE
+      </div>
+
+      <div className="scene-meta-body">
+        <div className="scene-meta-left">
+          {clock ? (
+            <div className="scene-meta-clock-block">
+              <div className="scene-meta-clock-row">
+                <span className="scene-meta-clock">
+                  <span>{clock.hour}</span>
+                  <span>{clock.minute}</span>
+                </span>
+                {clock.weekday ? (
+                  <span className="scene-meta-ghost">{clock.weekday}</span>
+                ) : null}
+              </div>
+              <div className="scene-meta-date">{clock.dateText}</div>
+            </div>
+          ) : null}
+
+          {people ? (
+            <div className="scene-meta-row">
+              <span className="scene-meta-ghost">CHARACTER</span>
+              <span className="scene-meta-row-val">{people}</span>
+            </div>
+          ) : null}
+
+          {weather ? (
+            <div className="scene-meta-row">
+              <span className="scene-meta-ghost">SUMMARY</span>
+              <span className="scene-meta-row-val is-soft">{weather}</span>
+            </div>
+          ) : null}
+
+          {comment ? (
+            <p className="scene-meta-comment">{comment}</p>
+          ) : null}
         </div>
-      )}
-      {comment ? (
-        <p
-          className={[
-            'text-[12px] leading-relaxed text-white/70',
-            rows.length ? 'mt-1.5 border-t border-white/8 pt-1.5' : '',
-          ].join(' ')}
-        >
-          {comment}
-        </p>
-      ) : null}
+
+        {location ? (
+          <div className="scene-meta-right">
+            <div className="scene-meta-loc-label">LOCATION</div>
+            <div className="scene-meta-loc-main">{location.main}</div>
+            {location.sub ? (
+              <div className="scene-meta-loc-sub">{location.sub}</div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }
